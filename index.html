@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="Home HQ"/>
-<title>Home HQ</title>
+<meta name="apple-mobile-web-app-title" content="Dinner Daily"/>
+<title>Dinner Daily</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -37,7 +37,7 @@
   --pink-bg:#4B1528;--pink-tx:#F4C0D1;
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg3);color:var(--text)}
+html,body{height:100%;font-family:Arial,sans-serif;background:var(--bg3);color:var(--text)}
 
 /* LOCK */
 .lock-screen{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem}
@@ -84,6 +84,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg3);col
 /* WHO TAGS */
 .who-tag{font-size:11px;padding:2px 7px;border-radius:99px;font-weight:500;white-space:nowrap}
 .w-all{background:var(--green-bg);color:var(--green-tx)}
+.w-hoopie{background:var(--green-bg);color:var(--green-tx)}
+.w-zev{background:var(--blue-bg);color:var(--blue-tx)}
+.w-auden{background:var(--pink-bg);color:var(--pink-tx)}
+.w-isaac{background:var(--purple-bg);color:var(--purple-tx)}
 .w-mom{background:var(--pink-bg);color:var(--pink-tx)}
 .w-dad{background:var(--blue-bg);color:var(--blue-tx)}
 .w-kid{background:var(--purple-bg);color:var(--purple-tx)}
@@ -102,7 +106,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg3);col
 /* BUTTONS & INPUTS */
 .action-btn{background:none;border:none;cursor:pointer;color:var(--text2);font-size:17px;padding:5px;border-radius:8px;display:flex;align-items:center;min-width:32px;min-height:32px;justify-content:center;transition:background .12s}
 .action-btn:hover,.action-btn:active{background:var(--bg2);color:var(--text)}
-input,select,button{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r);padding:9px 10px;outline:none;-webkit-appearance:none}
+input,select,button{font-family:Arial,sans-serif;font-size:14px;color:var(--text);background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r);padding:9px 10px;outline:none;-webkit-appearance:none}
 input:focus,select:focus{border-color:#378ADD;box-shadow:0 0 0 2px rgba(55,138,221,0.15)}
 button{cursor:pointer;padding:9px 14px;transition:background .12s}
 button:hover{background:var(--bg2)}
@@ -152,6 +156,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .info-box{background:var(--bg2);border-radius:var(--r);padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:10px}
 .info-box strong{color:var(--text)}
 .empty{font-size:13px;color:var(--text3);text-align:center;padding:1.5rem 0}
+.agenda-day{margin-bottom:4px}
+.agenda-day-header{display:flex;align-items:center;gap:10px;padding:10px 0 6px}
+.agenda-day-name{font-size:13px;font-weight:500;color:var(--text2);min-width:36px}
+.agenda-day-date{font-size:22px;font-weight:500;color:var(--text);min-width:32px;text-align:center;line-height:1}
+.agenda-day-date.is-today{color:#378ADD}
+.agenda-divider{flex:1;height:0.5px;background:var(--border)}
+.agenda-empty{font-size:12px;color:var(--text3);padding:6px 0 10px 78px}
+.agenda-ev{display:flex;align-items:flex-start;gap:10px;padding:6px 0 6px 78px;border-bottom:0.5px solid var(--border)}
+.agenda-ev:last-child{border-bottom:none}
+.agenda-ev-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.agenda-ev-title{font-size:14px;font-weight:500;flex:1;min-width:0}
+.agenda-ev-time{font-size:12px;color:var(--text2);margin-top:2px}
+.agenda-ev-tags{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-top:2px}
 .podium{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:4px}
 .podium-slot{text-align:center;padding:16px 8px;border-radius:var(--rlg);border:0.5px solid var(--border);position:relative}
 .podium-slot.p1{background:var(--amber-bg);border-color:var(--amber-tx)}
@@ -228,7 +245,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <div class="lock-screen" id="lock-screen">
   <div class="lock-card">
     <div class="lock-icon">🏠</div>
-    <div class="lock-title">Home HQ</div>
+    <div class="lock-title">Dinner Daily</div>
     <div class="lock-sub">Enter the family password</div>
     <input id="lock-input" type="password" maxlength="10" placeholder="····" autocomplete="off"
       onkeydown="if(event.key==='Enter')checkPassword()"/>
@@ -241,7 +258,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <!-- HEADER -->
   <div class="header">
     <div>
-      <h1>🏠 Home HQ</h1>
+      <h1>🏠 Dinner Daily</h1>
       <div id="save-status">Loading...</div>
     </div>
     <div id="today-date"></div>
@@ -314,41 +331,30 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="card">
       <div class="top-row">
         <div style="display:flex;align-items:center;gap:8px">
-          <button class="action-btn" onclick="changeWeek(-1)" title="Previous week"><i class="ti ti-chevron-left"></i></button>
-          <div class="section-title" style="margin-bottom:0" id="cal-week-label"></div>
-          <button class="action-btn" onclick="changeWeek(1)" title="Next week"><i class="ti ti-chevron-right"></i></button>
+          <button class="action-btn" onclick="changeWeek(-1)"><i class="ti ti-chevron-left"></i></button>
+          <div style="font-size:14px;font-weight:500;color:var(--text)" id="cal-week-label"></div>
+          <button class="action-btn" onclick="changeWeek(1)"><i class="ti ti-chevron-right"></i></button>
         </div>
-        <select id="cal-filter-who" onchange="renderCalendar()" style="font-size:12px;padding:5px 24px 5px 8px;width:auto">
-          <option value="all">Everyone</option>
-          <option value="hoopie">Hoopie</option>
-          <option value="isaac">Isaac</option>
-          <option value="auden">Auden</option>
-          <option value="zev">Zev</option>
-        </select>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="cal-filter-who" onchange="renderCalendar()" style="font-size:12px;padding:5px 24px 5px 8px;width:auto">
+            <option value="all">Everyone</option>
+            <option value="hoopie">Hoopie</option>
+            <option value="isaac">Isaac</option>
+            <option value="auden">Auden</option>
+            <option value="zev">Zev</option>
+          </select>
+          <span id="gcal-sync-status" style="font-size:12px;color:var(--text2)"></span>
+          <button onclick="syncGCal()" id="gcal-sync-btn" style="font-size:12px;padding:5px 10px">Sync</button>
+        </div>
       </div>
-      <div class="week-grid" id="cal-headers"></div>
-      <div class="week-grid" id="cal-body"></div>
-    </div>
-
-    <!-- DAY DETAIL (hidden until a day is clicked) -->
-    <div class="card" id="day-detail-card" style="display:none">
-      <div class="top-row">
-        <div class="section-title" style="margin-bottom:0" id="day-detail-label"></div>
-        <button class="action-btn" onclick="closeDayDetail()"><i class="ti ti-x"></i></button>
-      </div>
-      <div id="day-detail-list"></div>
+      <div id="week-agenda"></div>
     </div>
 
     <div class="card">
       <div class="top-row">
-        <div class="section-title" style="margin-bottom:0">This week's events</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span id="gcal-sync-status" style="font-size:12px;color:var(--text2)"></span>
-          <button onclick="syncGCal()" id="gcal-sync-btn" style="font-size:12px;padding:6px 10px">Sync Google</button>
-        </div>
+        <div class="section-title" style="margin-bottom:0">Add event</div>
       </div>
-      <div id="event-list"></div>
-      <div class="add-form" style="margin-top:12px">
+      <div class="add-form">
         <input type="text" id="new-ev-title" placeholder="Event title..." style="flex:2;min-width:140px"/>
         <input type="datetime-local" id="new-ev-date" style="min-width:160px"/>
         <select id="new-ev-who" style="min-width:100px">
@@ -550,7 +556,7 @@ function renderAll(){renderProjects();renderCalendar();renderGrocery();}
 const CAT_OPTIONS=['🏠','🌿','🧹','❤️','🎉','📦'];
 const WHO_OPTIONS=['all','isaac','hoopie','auden','zev'];
 const WHO_LABELS={all:'Everyone',isaac:'Isaac',hoopie:'Hoopie',auden:'Auden',zev:'Zev'};
-const WHO_COLORS={all:'w-all',isaac:'w-dad',hoopie:'w-mom',auden:'w-kid',zev:'w-kid'};
+const WHO_COLORS={all:'w-all',isaac:'w-isaac',hoopie:'w-hoopie',auden:'w-auden',zev:'w-zev'};
 
 function renderProjects(){
   const filter=document.getElementById('proj-filter').value;
@@ -651,18 +657,16 @@ async function addProject(){
 }
 
 // ── CALENDAR ──────────────────────────────────────────────────────
-const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const WHO_COLOR={all:'#639922',hoopie:'#D85A30',isaac:'#378ADD',auden:'#7F77DD',zev:'#D85A30'};
+const DAY_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAY_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const WHO_COLOR={all:'#639922',hoopie:'#1D9E75',isaac:'#7F77DD',auden:'#D4537E',zev:'#378ADD'};
 const WHO_LABELS_CAL={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'Zev'};
-const WHO_CLASS_CAL={all:'w-all',hoopie:'w-mom',isaac:'w-dad',auden:'w-kid',zev:'w-kid'};
-
-let selectedDay=null;
+const WHO_CLASS_CAL={all:'w-all',hoopie:'w-hoopie',isaac:'w-isaac',auden:'w-auden',zev:'w-zev'};
 
 function getCalWhoFilter(){
   const el=document.getElementById('cal-filter-who');
   return el?el.value:'all';
 }
-
 function filterEvsByWho(evs){
   const who=getCalWhoFilter();
   if(who==='all') return evs;
@@ -675,123 +679,62 @@ function renderCalendar(){
   const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   document.getElementById('cal-week-label').textContent=fmt(ws)+' – '+fmt(we);
 
-  document.getElementById('cal-headers').innerHTML=DAY_NAMES.map(d=>
-    `<div class="wk-header">${d}</div>`).join('');
-
   const allEvs=filterEvsByWho([...events,...gcalEvents]);
-  let cells='';
+  const todayStr=toDateStr(today);
+  let html='';
+
   for(let i=0;i<7;i++){
     const day=new Date(ws); day.setDate(ws.getDate()+i);
     const ds=toDateStr(day);
-    const isT=ds===toDateStr(today);
-    const isSel=ds===selectedDay;
-    const dayEvs=allEvs.filter(e=>e.date&&e.date.startsWith(ds));
-    const hasEvs=dayEvs.length>0;
-    const dots=dayEvs.slice(0,3).map(e=>{
-      const c=e.gcalColor||WHO_COLOR[e.who]||'#888';
-      return`<div class="cal-dot" style="background:${c}"></div>`;
-    }).join('');
-    let cls='wk-day';
-    if(isT) cls+=' today';
-    if(isSel) cls+=' selected';
-    if(hasEvs) cls+=' has-events';
-    cells+=`<div class="${cls}" onclick="selectDay('${ds}')">
-      <div class="wk-num">${day.getDate()}</div>
-      ${dots}
-    </div>`;
-  }
-  document.getElementById('cal-body').innerHTML=cells;
-  if(selectedDay) showDayDetail(selectedDay);
-  renderEvents();
-}
+    const isT=ds===todayStr;
+    const dayEvs=allEvs.filter(e=>e.date&&e.date.startsWith(ds))
+      .sort((a,b)=>new Date(a.date)-new Date(b.date));
 
-function selectDay(ds){
-  if(selectedDay===ds){ closeDayDetail(); return; }
-  selectedDay=ds;
-  renderCalendar();
-}
-
-function showDayDetail(ds){
-  const card=document.getElementById('day-detail-card');
-  const label=document.getElementById('day-detail-label');
-  const list=document.getElementById('day-detail-list');
-  const d=new Date(ds+'T00:00:00');
-  label.textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  const allEvs=filterEvsByWho([...events,...gcalEvents]);
-  const dayEvs=allEvs.filter(e=>e.date&&e.date.startsWith(ds)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  if(!dayEvs.length){
-    list.innerHTML='<div class="empty">No events this day</div>';
-  } else {
-    list.innerHTML=dayEvs.map(e=>{
-      const t=new Date(e.date);
-      const ts=t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-      const color=e.gcalColor||WHO_COLOR[e.who]||'#888';
-      const tag=e.gcalFeedName
-        ?`<span class="who-tag w-gcal">${e.gcalFeedName}</span>`
-        :`<span class="who-tag ${WHO_CLASS_CAL[e.who]||'w-all'}">${WHO_LABELS_CAL[e.who]||e.who}</span>`;
-      const src=e.gcalFeedName?`<span class="ev-source">Google</span>`:'';
-      const del=e.gcalFeedName?'':`<button class="action-btn" onclick="deleteEvent(${e.id})"><i class="ti ti-trash"></i></button>`;
-      return`<div class="ev">
-        <div class="ev-dot" style="background:${color}"></div>
-        <div style="flex:1;min-width:0">
-          <div class="ev-title">${e.title}${src}</div>
-          <div class="ev-meta">${ts}</div>
-        </div>
-        ${tag}${del}
+    html+=`<div class="agenda-day">
+      <div class="agenda-day-header">
+        <div class="agenda-day-name">${DAY_SHORT[day.getDay()]}</div>
+        <div class="agenda-day-date${isT?' is-today':''}">${day.getDate()}</div>
+        <div class="agenda-divider"></div>
       </div>`;
-    }).join('');
-  }
-  card.style.display='block';
-}
 
-function closeDayDetail(){
-  selectedDay=null;
-  document.getElementById('day-detail-card').style.display='none';
-  renderCalendar();
+    if(!dayEvs.length){
+      html+=`<div class="agenda-empty">No events</div>`;
+    } else {
+      dayEvs.forEach(e=>{
+        const d=new Date(e.date);
+        const ts=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+        const color=e.gcalColor||WHO_COLOR[e.who]||'#888';
+        const tag=e.gcalFeedName
+          ?`<span class="who-tag w-gcal">${e.gcalFeedName}</span>`
+          :`<span class="who-tag ${WHO_CLASS_CAL[e.who]||'w-all'}">${WHO_LABELS_CAL[e.who]||e.who}</span>`;
+        const src=e.gcalFeedName?`<span class="ev-source">Google</span>`:'';
+        const del=e.gcalFeedName?'':`<button class="action-btn" onclick="deleteEvent(${e.id})" style="padding:2px"><i class="ti ti-trash" style="font-size:14px"></i></button>`;
+        html+=`<div class="agenda-ev">
+          <div class="agenda-ev-dot" style="background:${color}"></div>
+          <div style="flex:1;min-width:0">
+            <div class="agenda-ev-title">${e.title}${src}</div>
+            <div class="agenda-ev-time">${ts}</div>
+          </div>
+          <div class="agenda-ev-tags">${tag}${del}</div>
+        </div>`;
+      });
+    }
+    html+='</div>';
+  }
+
+  document.getElementById('week-agenda').innerHTML=html;
+  updateStats();
 }
 
 function changeWeek(dir){
   weekStart.setDate(weekStart.getDate()+(dir*7));
-  selectedDay=null;
-  document.getElementById('day-detail-card').style.display='none';
   renderCalendar();
 }
 
-function renderEvents(){
-  const ws=new Date(weekStart);
-  const we=new Date(weekEnd()); we.setHours(23,59,59);
-  const allEvs=filterEvsByWho([...events,...gcalEvents]).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const visible=allEvs.filter(e=>{const d=new Date(e.date);return d>=ws&&d<=we;});
-  const el=document.getElementById('event-list');
-  if(!visible.length){el.innerHTML='<div class="empty">No events this week</div>';updateStats();return;}
-  el.innerHTML=visible.map(e=>{
-    const d=new Date(e.date);
-    const ds=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-    const ts=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    const color=e.gcalColor||WHO_COLOR[e.who]||'#888';
-    const tag=e.gcalFeedName
-      ?`<span class="who-tag w-gcal">${e.gcalFeedName}</span>`
-      :`<span class="who-tag ${WHO_CLASS_CAL[e.who]||'w-all'}">${WHO_LABELS_CAL[e.who]||e.who}</span>`;
-    const src=e.gcalFeedName?`<span class="ev-source">Google</span>`:'';
-    const del=e.gcalFeedName?'':`<button class="action-btn" onclick="deleteEvent(${e.id})"><i class="ti ti-trash"></i></button>`;
-    return`<div class="ev">
-      <div class="ev-dot" style="background:${color}"></div>
-      <div style="flex:1;min-width:0">
-        <div class="ev-title">${e.title}${src}</div>
-        <div class="ev-meta">${ds} · ${ts}</div>
-      </div>
-      ${tag}${del}
-    </div>`;
-  }).join('');
-  updateStats();
-}
+function deleteEvent(id){events=events.filter(x=>x.id!==id);
+  sbFetch('events','DELETE',null,`?id=eq.${id}`).catch(()=>{});
+  renderCalendar();}
 
-async function deleteEvent(id){
-  events=events.filter(x=>x.id!==id);
-  try{await sbFetch('events','DELETE',null,`?id=eq.${id}`);setSaveStatus('All changes saved');}
-  catch(e){lsSave('hhq-events',events);setSaveStatus('Saved locally');}
-  renderCalendar();
-}
 async function addEvent(){
   const title=document.getElementById('new-ev-title').value.trim();
   const date=document.getElementById('new-ev-date').value;
@@ -984,7 +927,7 @@ function parseICSDate(r){
 }
 
 // ── LEADERBOARD ──────────────────────────────────────────────────
-const LB_COLORS={all:'#639922',hoopie:'#D85A30',isaac:'#378ADD',auden:'#7F77DD',zev:'#D44'};
+const LB_COLORS={all:'#639922',hoopie:'#1D9E75',isaac:'#7F77DD',auden:'#D4537E',zev:'#378ADD'};
 const LB_INITIALS={all:'ALL',hoopie:'H',isaac:'I',auden:'A',zev:'Z'};
 const LB_NAMES={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'Zev'};
 const MEMBERS=['isaac','hoopie','auden','zev'];
