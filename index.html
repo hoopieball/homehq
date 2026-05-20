@@ -37,7 +37,7 @@
   --pink-bg:#4B1528;--pink-tx:#F4C0D1;
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;font-family:Arial,sans-serif;background:var(--bg3);color:var(--text)}
+html,body{height:100%;font-family:Arial,sans-serif;background:linear-gradient(135deg,#a8a8a8 0%,#b8b8b8 100%);color:var(--text)}
 
 /* LOCK */
 .lock-screen{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem}
@@ -50,7 +50,7 @@ html,body{height:100%;font-family:Arial,sans-serif;background:var(--bg3);color:v
 .lock-error{font-size:13px;color:var(--red-tx);margin-top:8px;min-height:20px}
 
 /* LAYOUT — mobile-first */
-.app{padding:1rem 0.875rem calc(1rem + var(--safe-b));min-height:100vh}
+.app{padding:1rem 0.875rem calc(1rem + var(--safe-b));min-height:100vh;background:rgba(255,255,255,0.92);backdrop-filter:blur(2px)}
 .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:8px}
 .header h1{font-size:20px;font-weight:500}
 #save-status{font-size:11px;color:var(--green-tx);margin-top:2px}
@@ -533,35 +533,38 @@ function defGroceries(){return[
 
 async function fetchWeather(){
   try{
-    const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.9132&longitude=-79.0558&current=temperature_2m,weather_code,relative_humidity,wind_speed_10m&temperature_unit=fahrenheit');
+    const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.9132&longitude=-79.0558&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit');
+    if(!res.ok) throw new Error('HTTP '+res.status);
     const data=await res.json();
-    const current=data.current;
-    const code=current.weather_code;
+    const c=data.current;
+    const code=c.weather_code;
+    console.log('[Weather] Code:',code,'Temp:',c.temperature_2m);
     
-    // Map weather codes to description and background
-    const weatherMap={
-      0:{desc:'Clear',bg:'linear-gradient(135deg,#667eea 0%,#764ba2 100%)'},
-      1:{desc:'Mostly Clear',bg:'linear-gradient(135deg,#667eea 0%,#764ba2 100%)'},
-      2:{desc:'Partly Cloudy',bg:'linear-gradient(135deg,#a8edea 0%,#fed6e3 100%)'},
-      3:{desc:'Overcast',bg:'linear-gradient(135deg,#9ca6b8 0%,#c8c8c8 100%)'},
-      45:{desc:'Foggy',bg:'linear-gradient(135deg,#bbb 0%,#ddd 100%)'},
-      48:{desc:'Foggy',bg:'linear-gradient(135deg,#bbb 0%,#ddd 100%)'},
-      51:{desc:'Light Drizzle',bg:'linear-gradient(135deg,#667eea 0%,#89c4eb 100%)'},
-      61:{desc:'Rain',bg:'linear-gradient(135deg,#4a5568 0%,#2d3748 100%)'},
-      71:{desc:'Snow',bg:'linear-gradient(135deg,#e0e7ff 0%,#f3f4f6 100%)'},
-      80:{desc:'Showers',bg:'linear-gradient(135deg,#2d5a7b 0%,#6fa3c1 100%)'},
-      95:{desc:'Thunderstorm',bg:'linear-gradient(135deg,#1a202c 0%,#2d3748 100%)'},
-    };
-    const weather=weatherMap[code]||{desc:'Cloudy',bg:'linear-gradient(135deg,#a8a8a8 0%,#b8b8b8 100%)'};
+    let bg='linear-gradient(135deg,#a8a8a8 0%,#b8b8b8 100%)',desc='Cloudy';
+    if(code===0||code===1){bg='linear-gradient(135deg,#667eea 0%,#764ba2 100%)';desc='Clear';}
+    else if(code===2){bg='linear-gradient(135deg,#a8edea 0%,#fed6e3 100%)';desc='Partly Cloudy';}
+    else if(code===3){bg='linear-gradient(135deg,#9ca6b8 0%,#c8c8c8 100%)';desc='Overcast';}
+    else if(code===45||code===48){bg='linear-gradient(135deg,#bbb 0%,#ddd 100%)';desc='Foggy';}
+    else if(code>=51&&code<=67){bg='linear-gradient(135deg,#667eea 0%,#89c4eb 100%)';desc='Rainy';}
+    else if(code>=71&&code<=77){bg='linear-gradient(135deg,#e0e7ff 0%,#f3f4f6 100%)';desc='Snow';}
+    else if(code===80||code===81||code===82){bg='linear-gradient(135deg,#2d5a7b 0%,#6fa3c1 100%)';desc='Showers';}
+    else if(code>=90){bg='linear-gradient(135deg,#1a202c 0%,#2d3748 100%)';desc='Thunderstorm';}
     
-    document.body.style.backgroundImage=weather.bg;
+    document.body.style.backgroundImage=bg;
+    console.log('[Weather] Setting background');
     
     const widget=document.getElementById('weather-widget');
-    document.getElementById('weather-temp').textContent=Math.round(current.temperature_2m)+'°F';
-    document.getElementById('weather-desc').textContent=weather.desc;
-    document.getElementById('weather-detail').textContent='Humidity '+current.relative_humidity+'% · Wind '+Math.round(current.wind_speed_10m)+' mph';
-    widget.style.display='block';
-  }catch(e){console.error('Weather fetch failed',e);}
+    if(widget){
+      document.getElementById('weather-temp').textContent=Math.round(c.temperature_2m)+'°F';
+      document.getElementById('weather-desc').textContent=desc;
+      document.getElementById('weather-detail').textContent='Humidity '+c.relative_humidity_2m+'% · Wind '+Math.round(c.wind_speed_10m)+' mph';
+      widget.style.display='block';
+      console.log('[Weather] Widget updated');
+    }
+  }catch(e){
+    console.error('[Weather] Error:',e.message);
+    document.body.style.backgroundImage='linear-gradient(135deg,#a8a8a8 0%,#b8b8b8 100%)';
+  }
 }
 
 async function init(){
@@ -591,8 +594,8 @@ async function init(){
     completions=lsLoad('hhq-completions',[]);
     setSaveStatus('Offline — changes saved locally');
   }
-  renderAll();
   fetchWeather();
+  renderAll();
   if(gcalFeeds.length) syncGCal();
 }
 
@@ -920,7 +923,7 @@ async function addGCal(){
   document.getElementById('new-gcal-name').value='';
   document.getElementById('new-gcal-url').value='';
   try{await sbFetch('gcal_feeds','POST',{name,who,url,color,status:'pending'});setSaveStatus('All changes saved');}
-  catch(e){lsSave('hhq-gcalfeeds',gcalFeeds);setSaveStatus('Saved locally');}
+  catch(e){console.error('[GCal Add] Save failed:',e.message);lsSave('hhq-gcalfeeds',gcalFeeds);setSaveStatus('Saved locally');}
   renderGCalList();syncGCal();
 }
 async function removeGCal(i){
