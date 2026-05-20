@@ -83,7 +83,7 @@ html,body{height:100%;font-family:Arial,sans-serif;background:var(--bg3);color:v
 
 /* WHO TAGS */
 .who-tag{font-size:11px;padding:2px 7px;border-radius:99px;font-weight:500;white-space:nowrap}
-.w-all{background:var(--green-bg);color:var(--green-tx)}
+.w-all{background:#FAEEDA;color:#854F0B}
 .w-hoopie{background:var(--green-bg);color:var(--green-tx)}
 .w-zev{background:var(--blue-bg);color:var(--blue-tx)}
 .w-auden{background:var(--pink-bg);color:var(--pink-tx)}
@@ -94,13 +94,19 @@ html,body{height:100%;font-family:Arial,sans-serif;background:var(--bg3);color:v
 .w-gcal{background:var(--gray-bg);color:var(--gray-tx)}
 
 /* PROJECTS */
-.proj-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.proj-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);flex-wrap:wrap}
 .proj-item:last-child{border-bottom:none;padding-bottom:0}
 .proj-icon{width:34px;height:34px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:var(--bg2)}
-.proj-meta{flex:1;min-width:0}
-.proj-name{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-meta{flex:1;min-width:0;min-width:calc(100% - 44px)}
+.proj-name{font-size:14px;font-weight:500;white-space:normal;word-break:break-word}
 .proj-sub{font-size:12px;color:var(--text2);margin-top:2px}
-.proj-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.proj-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:wrap;padding-left:44px;width:100%}
+@media(min-width:600px){
+  .proj-item{flex-wrap:nowrap;align-items:center}
+  .proj-meta{min-width:0}
+  .proj-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .proj-actions{padding-left:0;width:auto}
+}
 .done-strike{text-decoration:line-through;color:var(--text2)}
 
 /* BUTTONS & INPUTS */
@@ -383,8 +389,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div id="gcal-list"></div>
         <div class="add-form" style="margin-top:10px">
-          <input type="text" id="new-gcal-name" placeholder="Name (e.g. Hoopie)" style="min-width:90px;max-width:120px"/>
-          <input type="text" id="new-gcal-url" placeholder="Paste iCal URL..." style="flex:2"/>
+          <input type="text" id="new-gcal-name" placeholder="Calendar label..." style="flex:1;min-width:100px"/>
+          <select id="new-gcal-who" style="min-width:100px">
+            <option value="all">Everyone</option>
+            <option value="hoopie">Hoopie</option>
+            <option value="isaac">Isaac</option>
+            <option value="auden">Auden</option>
+            <option value="zev">Zev</option>
+          </select>
+          <input type="text" id="new-gcal-url" placeholder="Paste iCal URL..." style="flex:2;min-width:140px"/>
           <input type="color" id="new-gcal-color" value="#378ADD" style="padding:2px;height:40px;width:44px;flex:none;border-radius:var(--r)"/>
           <button onclick="addGCal()"><i class="ti ti-plus"></i> Add</button>
         </div>
@@ -662,7 +675,7 @@ async function addProject(){
 // ── CALENDAR ──────────────────────────────────────────────────────
 const DAY_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const DAY_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const WHO_COLOR={all:'#639922',hoopie:'#1D9E75',isaac:'#7F77DD',auden:'#D4537E',zev:'#378ADD'};
+const WHO_COLOR={all:'#E8770A',hoopie:'#1D9E75',isaac:'#7F77DD',auden:'#D4537E',zev:'#378ADD'};
 const WHO_LABELS_CAL={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'Zev'};
 const WHO_CLASS_CAL={all:'w-all',hoopie:'w-hoopie',isaac:'w-isaac',auden:'w-auden',zev:'w-zev'};
 
@@ -673,7 +686,7 @@ function getCalWhoFilter(){
 function filterEvsByWho(evs){
   const who=getCalWhoFilter();
   if(who==='all') return evs;
-  return evs.filter(e=>e.who===who||e.gcalFeedName===who);
+  return evs.filter(e=>(e.who||'all')===who);
 }
 
 function renderCalendar(){
@@ -828,6 +841,8 @@ function toggleGCalSetup(){
 function renderGCalList(){
   const el=document.getElementById('gcal-list');
   if(!gcalFeeds.length){el.innerHTML='<div class="empty" style="text-align:left;padding:0.5rem 0">No calendars connected yet</div>';return;}
+  const wl={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'Zev'};
+  const wc={all:'w-all',hoopie:'w-hoopie',isaac:'w-isaac',auden:'w-auden',zev:'w-zev'};
   el.innerHTML=gcalFeeds.map((f,i)=>`
     <div class="gcal-row">
       <div class="gcal-dot" style="background:${f.color}"></div>
@@ -835,20 +850,22 @@ function renderGCalList(){
         <div style="font-size:14px;font-weight:500">${f.name}</div>
         <div class="gcal-url">${f.url}</div>
       </div>
+      <span class="who-tag ${wc[f.who||'all']}">${wl[f.who||'all']}</span>
       <span class="badge ${f.status==='ok'?'b-ok':f.status==='error'?'b-overdue':'b-soon'}">${f.status==='ok'?'Connected':f.status==='error'?'Error':'Pending'}</span>
       <button class="action-btn" onclick="removeGCal(${i})"><i class="ti ti-trash"></i></button>
     </div>`).join('');
 }
 async function addGCal(){
   const name=document.getElementById('new-gcal-name').value.trim();
+  const who=document.getElementById('new-gcal-who').value;
   const url=document.getElementById('new-gcal-url').value.trim();
   const color=document.getElementById('new-gcal-color').value;
   if(!name||!url)return;
-  const newF={name,url,color,status:'pending'};
+  const newF={name,who,url,color,status:'pending'};
   gcalFeeds.push(newF);
   document.getElementById('new-gcal-name').value='';
   document.getElementById('new-gcal-url').value='';
-  try{await sbFetch('gcal_feeds','POST',{name,url,color,status:'pending'});setSaveStatus('All changes saved');}
+  try{await sbFetch('gcal_feeds','POST',{name,who,url,color,status:'pending'});setSaveStatus('All changes saved');}
   catch(e){lsSave('hhq-gcalfeeds',gcalFeeds);setSaveStatus('Saved locally');}
   renderGCalList();syncGCal();
 }
@@ -888,7 +905,7 @@ async function syncGCal(){
   for(const feed of gcalFeeds){
     try{
       const ical=await fetchICS(feed.url);
-      gcalEvents.push(...parseICS(ical,feed.name,feed.color));
+      gcalEvents.push(...parseICS(ical,feed.name,feed.color,feed.who||'all'));
       feed.status='ok';feed.lastError='';
     }catch(e){feed.status='error';feed.lastError=e.message||'Failed';}
   }
@@ -903,7 +920,7 @@ async function syncGCal(){
   st.textContent=err?`${ok} ok, ${err} failed`:`${ok} synced`;
   renderGCalList();renderCalendar();
 }
-function parseICS(ical,feedName,color){
+function parseICS(ical,feedName,color,feedWho){
   const evs=[];
   ical=ical.replace(/\r\n /g,'').replace(/\r\n\t/g,'');
   const blocks=ical.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g)||[];
@@ -913,27 +930,57 @@ function parseICS(ical,feedName,color){
     try{
       const tm=b.match(/SUMMARY:([^\r\n]*)/);
       const title=(tm?tm[1]:'(no title)').trim().replace(/\\n/g,' ').replace(/\\,/g,',').replace(/\\;/g,';');
-      const rm=b.match(/DTSTART(?:;[^:]*)?:([\dTZ]+)/);
-      if(!rm)continue;
-      const d=parseICSDate(rm[1]);
+      const dtLine=b.match(/DTSTART(;[^:]*)?:([\dTZ]+)/);
+      if(!dtLine)continue;
+      const tzid=(dtLine[1]||'').match(/TZID=([^;]+)/);
+      const raw=dtLine[2];
+      const d=parseICSDate(raw,tzid?tzid[1]:null);
       if(!d||isNaN(d.getTime())||d<cutoff||d>future)continue;
-      evs.push({id:'g-'+Math.random(),title,date:d.toISOString().slice(0,16),gcalFeedName:feedName,gcalColor:color});
+      // Store as local ISO so display times are always correct
+      const localISO=toLocalISOString(d);
+      evs.push({id:'g-'+Math.random(),title,date:localISO,gcalFeedName:feedName,gcalColor:color,who:feedWho||'all'});
     }catch(e){}
   }
   return evs;
 }
-function parseICSDate(r){
+function toLocalISOString(d){
+  const pad=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function parseICSDate(r,tzid){
   try{
     r=r.trim();
-    if(r.length===8)return new Date(r.slice(0,4)+'-'+r.slice(4,6)+'-'+r.slice(6,8)+'T00:00:00');
-    if(r.endsWith('Z'))return new Date(r.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,'$1-$2-$3T$4:$5:$6Z'));
+    // All-day event: no time component
+    if(r.length===8){
+      return new Date(r.slice(0,4)+'-'+r.slice(4,6)+'-'+r.slice(6,8)+'T00:00:00');
+    }
+    // UTC time (ends with Z) — parse as UTC, JS converts to local automatically
+    if(r.endsWith('Z')){
+      return new Date(r.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,'$1-$2-$3T$4:$5:$6Z'));
+    }
+    // Floating time with TZID — treat as local time in that zone using Intl if possible
     const m=r.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
-    if(m)return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`);
+    if(m){
+      const iso=`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`;
+      if(tzid){
+        try{
+          // Use Intl to interpret the time in the calendar's timezone
+          const parts=new Intl.DateTimeFormat('en-US',{
+            timeZone:tzid,year:'numeric',month:'2-digit',day:'2-digit',
+            hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
+          }).formatToParts(new Date(iso));
+          const get=t=>parts.find(p=>p.type===t).value;
+          // Build a UTC date from the timezone-aware parts
+          return new Date(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`);
+        }catch(e){ return new Date(iso); }
+      }
+      return new Date(iso);
+    }
   }catch(e){}return null;
 }
 
 // ── LEADERBOARD ──────────────────────────────────────────────────
-const LB_COLORS={all:'#639922',hoopie:'#1D9E75',isaac:'#7F77DD',auden:'#D4537E',zev:'#378ADD'};
+const LB_COLORS={all:'#E8770A',hoopie:'#1D9E75',isaac:'#7F77DD',auden:'#D4537E',zev:'#378ADD'};
 const LB_INITIALS={all:'ALL',hoopie:'H',isaac:'I',auden:'A',zev:'Z'};
 const LB_NAMES={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'Zev'};
 const MEMBERS=['isaac','hoopie','auden','zev'];
