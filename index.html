@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Home HQ</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #efefec;
+    --text: #1a1a18;
+    --text2: #6b6b66;
+    --text3: #a8a8a2;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --radius: 10px;
+    --radius-lg: 14px;
+    --green-bg: #EAF3DE; --green-text: #3B6D11;
+    --amber-bg: #FAEEDA; --amber-text: #854F0B;
+    --red-bg: #FCEBEB; --red-text: #A32D2D;
+    --gray-bg: #F1EFE8; --gray-text: #5F5E5A;
+    --blue-bg: #E6F1FB; --blue-text: #185FA5;
+    --purple-bg: #EEEDFE; --purple-text: #534AB7;
+    --pink-bg: #FBEAF0; --pink-text: #993556;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+      --text: #f0f0ec; --text2: #a0a09a; --text3: #666660;
+      --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+      --green-bg:#173404;--green-text:#C0DD97;
+      --amber-bg:#412402;--amber-text:#FAC775;
+      --red-bg:#501313;--red-text:#F7C1C1;
+      --gray-bg:#2C2C2A;--gray-text:#D3D1C7;
+      --blue-bg:#042C53;--blue-text:#B5D4F4;
+      --purple-bg:#26215C;--purple-text:#CECBF6;
+      --pink-bg:#4B1528;--pink-text:#F4C0D1;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+  .app { max-width: 780px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .header-left h1 { font-size: 22px; font-weight: 500; }
+  .header-left p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .today { font-size: 13px; color: var(--text2); }
+  .save-status { font-size: 12px; color: var(--green-text); margin-top: 2px; }
+
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: var(--bg); border-radius: var(--radius); padding: 12px 14px; border: 0.5px solid var(--border); }
+  .stat-icon { font-size: 18px; color: var(--text2); margin-bottom: 4px; }
+  .stat-num { font-size: 22px; font-weight: 500; }
+  .stat-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 0.5px solid var(--border); margin-bottom: 1.5rem; }
+  .tab { padding: 8px 16px 10px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: color .15s; }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .panel { display: none; } .panel.active { display: block; }
+
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
+  .section-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+  .badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; display: inline-block; }
+  .b-overdue { background: var(--red-bg); color: var(--red-text); }
+  .b-soon { background: var(--amber-bg); color: var(--amber-text); }
+  .b-ok { background: var(--green-bg); color: var(--green-text); }
+  .b-done { background: var(--gray-bg); color: var(--gray-text); }
+
+  .proj-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .proj-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .proj-icon { width: 36px; height: 36px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; background: var(--bg2); }
+  .proj-meta { flex: 1; min-width: 0; }
+  .proj-name { font-size: 14px; font-weight: 500; }
+  .proj-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .proj-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .done-strike { text-decoration: line-through; color: var(--text2); }
+
+  .action-btn { background: none; border: none; cursor: pointer; color: var(--text2); font-size: 16px; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: background .12s; }
+  .action-btn:hover { background: var(--bg2); color: var(--text); }
+
+  input, select, button { font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px 10px; outline: none; }
+  input:focus, select:focus { border-color: #378ADD; box-shadow: 0 0 0 2px rgba(55,138,221,0.15); }
+  button { cursor: pointer; background: var(--bg); border: 0.5px solid var(--border2); padding: 8px 14px; transition: background .12s; }
+  button:hover { background: var(--bg2); }
+  button:active { transform: scale(0.98); }
+
+  .add-grid-4 { display: grid; grid-template-columns: 1fr 130px 110px auto; gap: 8px; margin-top: 14px; }
+  .add-grid-4b { display: grid; grid-template-columns: 1fr 140px 90px auto; gap: 8px; margin-top: 12px; }
+  .add-grid-groc { display: grid; grid-template-columns: 1fr 55px 110px auto; gap: 8px; margin-top: 12px; }
+
+  @media (max-width: 600px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .add-grid-4, .add-grid-4b, .add-grid-groc { grid-template-columns: 1fr 1fr; }
+    .add-grid-4 button, .add-grid-4b button, .add-grid-groc button { grid-column: span 2; }
+  }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 8px; }
+  .cal-day-header { font-size: 11px; font-weight: 500; color: var(--text2); text-align: center; padding: 4px 0; }
+  .cal-day { min-height: 50px; border-radius: var(--radius); padding: 4px; cursor: pointer; border: 0.5px solid transparent; }
+  .cal-day:hover { background: var(--bg2); }
+  .cal-day.other-month .cal-num { color: var(--text3); }
+  .cal-day.today { border-color: var(--border2); }
+  .cal-day.today .cal-num { font-weight: 500; }
+  .cal-num { color: var(--text2); font-size: 12px; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; margin: 1px auto 0; }
+
+  .ev { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+  .ev:last-child { border-bottom: none; }
+  .ev-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+  .ev-title { font-weight: 500; }
+  .ev-meta { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .who-tag { font-size: 11px; padding: 2px 7px; border-radius: 99px; font-weight: 500; white-space: nowrap; }
+  .w-all { background: var(--green-bg); color: var(--green-text); }
+  .w-mom { background: var(--pink-bg); color: var(--pink-text); }
+  .w-dad { background: var(--blue-bg); color: var(--blue-text); }
+  .w-kid { background: var(--purple-bg); color: var(--purple-text); }
+  .w-gcal { background: var(--gray-bg); color: var(--gray-text); }
+  .ev-source { font-size: 10px; padding: 1px 5px; border-radius: 99px; background: var(--bg2); color: var(--text3); margin-left: 4px; }
+
+  .grocery-section { margin-bottom: 1.25rem; }
+  .grocery-header { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .grocery-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 14px; }
+  .grocery-item:last-child { border-bottom: none; }
+  .grocery-item.checked { color: var(--text2); text-decoration: line-through; }
+  .grocery-item input[type=checkbox] { accent-color: var(--text); width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+  .qty { font-size: 12px; color: var(--text2); min-width: 30px; }
+
+  .gcal-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .gcal-row:last-child { border-bottom: none; }
+  .gcal-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .gcal-url { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+  .add-gcal-grid { display: grid; grid-template-columns: 100px 1fr 44px auto; gap: 8px; margin-top: 12px; }
+  .info-box { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: var(--text2); line-height: 1.65; margin-bottom: 12px; }
+  .info-box strong { color: var(--text); }
+  .store-filter { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+  .empty { font-size: 13px; color: var(--text3); text-align: center; padding: 1.5rem 0; }
+  .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <h1>🏠 Home HQ</h1>
+      <p id="save-status">Loading...</p>
+    </div>
+    <div class="today" id="today-date"></div>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><div class="stat-icon"><i class="ti ti-alert-triangle"></i></div><div class="stat-num" id="stat-overdue">0</div><div class="stat-label">overdue</div></div>
+    <div class="stat"><div class="stat-icon"><i class="ti ti-clock"></i></div><div class="stat-num" id="stat-soon">0</div><div class="stat-label">due soon</div></div>
+    <div class="stat"><div class="stat-icon"><i class="ti ti-calendar"></i></div><div class="stat-num" id="stat-events">0</div><div class="stat-label">this week</div></div>
+    <div class="stat"><div class="stat-icon"><i class="ti ti-shopping-cart"></i></div><div class="stat-num" id="stat-grocery">0</div><div class="stat-label">to buy</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('projects')"><i class="ti ti-tool"></i> Projects</button>
+    <button class="tab" onclick="switchTab('calendar')"><i class="ti ti-calendar"></i> Calendar</button>
+    <button class="tab" onclick="switchTab('grocery')"><i class="ti ti-shopping-cart"></i> Groceries</button>
+  </div>
+
+  <!-- PROJECTS -->
+  <div id="panel-projects" class="panel active">
+    <div class="card">
+      <div class="top-row">
+        <div class="section-title" style="margin-bottom:0">Home maintenance</div>
+        <select id="proj-filter" onchange="renderProjects()" style="font-size:12px;padding:4px 8px;width:auto">
+          <option value="all">All</option>
+          <option value="overdue">Overdue</option>
+          <option value="soon">Due soon</option>
+          <option value="ok">OK</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div id="proj-list"></div>
+      <div class="add-grid-4">
+        <input type="text" id="new-proj-name" placeholder="Task name..." />
+        <input type="date" id="new-proj-date" />
+        <select id="new-proj-cat">
+          <option value="🌡️">HVAC</option><option value="💧">Plumbing</option>
+          <option value="⚡">Electric</option><option value="🏡">Exterior</option>
+          <option value="🧹">Cleaning</option><option value="🔧">Repair</option>
+          <option value="🌿">Yard</option><option value="📦">Other</option>
+        </select>
+        <button onclick="addProject()"><i class="ti ti-plus"></i> Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="panel-calendar" class="panel">
+    <div class="card">
+      <div class="top-row">
+        <div class="section-title" style="margin-bottom:0" id="cal-month-label"></div>
+        <div style="display:flex;gap:4px">
+          <button class="action-btn" onclick="changeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+          <button class="action-btn" onclick="changeMonth(1)"><i class="ti ti-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-headers"></div>
+      <div class="cal-grid" id="cal-body"></div>
+    </div>
+    <div class="card">
+      <div class="top-row">
+        <div class="section-title" style="margin-bottom:0">Upcoming events</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="gcal-sync-status" style="font-size:12px;color:var(--text2)"></span>
+          <button onclick="syncGCal()" id="gcal-sync-btn" style="font-size:12px;padding:5px 10px">Sync Google</button>
+        </div>
+      </div>
+      <div id="event-list"></div>
+      <div class="add-grid-4b">
+        <input type="text" id="new-ev-title" placeholder="Event title..." />
+        <input type="datetime-local" id="new-ev-date" />
+        <select id="new-ev-who">
+          <option value="all">Everyone</option><option value="mom">Mom</option>
+          <option value="dad">Dad</option><option value="kid1">Kid 1</option><option value="kid2">Kid 2</option>
+        </select>
+        <button onclick="addEvent()"><i class="ti ti-plus"></i> Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="top-row">
+        <div class="section-title" style="margin-bottom:0"><i class="ti ti-brand-google" style="margin-right:4px"></i> Google Calendar</div>
+        <button onclick="toggleGCalSetup()" id="gcal-toggle-btn" style="font-size:12px;padding:5px 10px">Show setup</button>
+      </div>
+      <div id="gcal-setup-body" style="display:none">
+        <div class="info-box">
+          <strong>How to get your Google Calendar iCal URL:</strong><br>
+          1. Open Google Calendar on desktop<br>
+          2. Click the ⋮ next to any calendar → Settings<br>
+          3. Scroll to "Secret address in iCal format"<br>
+          4. Copy the URL and paste it below<br><br>
+          Add one entry per family member. Their events will appear in the calendar above with their color dot.
+        </div>
+        <div id="gcal-list"></div>
+        <div class="add-gcal-grid">
+          <input type="text" id="new-gcal-name" placeholder="Name..." />
+          <input type="text" id="new-gcal-url" placeholder="Paste webcal:// or https:// iCal URL..." />
+          <input type="color" id="new-gcal-color" value="#378ADD" style="padding:2px;height:36px;width:100%;border-radius:var(--radius)" />
+          <button onclick="addGCal()"><i class="ti ti-plus"></i> Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROCERY -->
+  <div id="panel-grocery" class="panel">
+    <div class="store-filter">
+      <select id="grocery-store" onchange="renderGrocery()" style="flex:1">
+        <option value="all">All stores</option>
+        <option value="Grocery">Grocery store</option>
+        <option value="Costco">Costco</option>
+        <option value="Target">Target</option>
+        <option value="Hardware">Hardware store</option>
+        <option value="Other">Other</option>
+      </select>
+      <button onclick="clearChecked()" style="font-size:13px;padding:7px 12px;color:var(--text2)">Clear checked</button>
+    </div>
+    <div class="card">
+      <div id="grocery-list"></div>
+      <div class="add-grid-groc">
+        <input type="text" id="new-groc-item" placeholder="Item..." />
+        <input type="text" id="new-groc-qty" placeholder="Qty" />
+        <select id="new-groc-store">
+          <option value="Grocery">Grocery</option><option value="Costco">Costco</option>
+          <option value="Target">Target</option><option value="Hardware">Hardware</option>
+          <option value="Other">Other</option>
+        </select>
+        <button onclick="addGrocery()"><i class="ti ti-plus"></i> Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const today = new Date(); today.setHours(0,0,0,0);
+document.getElementById('today-date').textContent = today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+const KEYS = { projects:'hhq-projects', events:'hhq-events', groceries:'hhq-groceries', gcalFeeds:'hhq-gcalfeeds' };
+
+let projects=[], events=[], groceries=[], gcalFeeds=[], gcalEvents=[];
+let calViewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+function save(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)); setSaveStatus('All changes saved'); } 
+  catch(e) { setSaveStatus('Could not save — storage full?'); }
+}
+function load(key, fallback) {
+  try { const v=localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch(e) { return fallback; }
+}
+function setSaveStatus(msg) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+}
+
+function defaultProjects(){return[
+  {id:1,name:'Change HVAC air filters',cat:'🌡️',dueDate:'2026-05-01',done:false},
+  {id:2,name:'Clean dryer vent',cat:'🧹',dueDate:'2026-05-25',done:false},
+  {id:3,name:'Test smoke detectors',cat:'⚡',dueDate:'2026-06-01',done:false},
+  {id:4,name:'Inspect roof gutters',cat:'🏡',dueDate:'2026-06-15',done:false},
+  {id:5,name:'Fix screen door',cat:'🔧',dueDate:'2026-07-01',done:false},
+];}
+function defaultEvents(){return[
+  {id:1,title:'Doctor appointment',date:'2026-05-28T10:00',who:'kid1'},
+  {id:2,title:'HVAC service visit',date:'2026-05-29T09:00',who:'dad'},
+  {id:3,title:"Family dinner",date:'2026-06-01T18:00',who:'all'},
+];}
+function defaultGroceries(){return[
+  {id:1,name:'Milk',qty:'1 gal',store:'Grocery',checked:false},
+  {id:2,name:'Eggs',qty:'2 doz',store:'Costco',checked:false},
+  {id:3,name:'Air filters 20x25x1',qty:'4',store:'Hardware',checked:false},
+  {id:4,name:'Bread',qty:'2 loaves',store:'Grocery',checked:false},
+  {id:5,name:'Laundry detergent',qty:'1',store:'Target',checked:false},
+];}
+
+function init() {
+  projects = load(KEYS.projects, defaultProjects());
+  events = load(KEYS.events, defaultEvents());
+  groceries = load(KEYS.groceries, defaultGroceries());
+  gcalFeeds = load(KEYS.gcalFeeds, []);
+  setSaveStatus('Loaded');
+  renderAll();
+  if(gcalFeeds.length) syncGCal();
+}
+
+function getStatus(p) {
+  if(p.done) return 'done';
+  const d=new Date(p.dueDate+'T00:00:00'), diff=Math.floor((d-today)/86400000);
+  if(diff<0) return 'overdue'; if(diff<=14) return 'soon'; return 'ok';
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['projects','calendar','grocery'][i]===t));
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='calendar'){renderCalendar();renderGCalList();}
+}
+
+function renderAll(){renderProjects();renderCalendar();renderGrocery();}
+
+function renderProjects() {
+  const filter=document.getElementById('proj-filter').value;
+  const list=document.getElementById('proj-list');
+  const filtered=projects.filter(p=>filter==='all'||getStatus(p)===filter);
+  if(!filtered.length){list.innerHTML='<div class="empty">No tasks here</div>';updateStats();return;}
+  const bc={overdue:'b-overdue',soon:'b-soon',ok:'b-ok',done:'b-done'};
+  const bt={overdue:'Overdue',soon:'Due soon',ok:'On track',done:'Done'};
+  list.innerHTML=filtered.map(p=>{
+    const s=getStatus(p);
+    const ds=new Date(p.dueDate+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return`<div class="proj-item">
+      <div class="proj-icon">${p.cat}</div>
+      <div class="proj-meta">
+        <div class="proj-name ${p.done?'done-strike':''}">${p.name}</div>
+        <div class="proj-sub">Due ${ds}</div>
+      </div>
+      <div class="proj-actions">
+        <span class="badge ${bc[s]}">${bt[s]}</span>
+        <button class="action-btn" onclick="toggleProj(${p.id})" title="${p.done?'Mark incomplete':'Mark done'}"><i class="ti ${p.done?'ti-rotate-clockwise-2':'ti-check'}"></i></button>
+        <button class="action-btn" onclick="deleteProj(${p.id})"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+function toggleProj(id){const p=projects.find(x=>x.id===id);if(p){p.done=!p.done;save(KEYS.projects,projects);renderProjects();}}
+function deleteProj(id){projects=projects.filter(x=>x.id!==id);save(KEYS.projects,projects);renderProjects();}
+function addProject(){
+  const name=document.getElementById('new-proj-name').value.trim();
+  const date=document.getElementById('new-proj-date').value;
+  const cat=document.getElementById('new-proj-cat').value;
+  if(!name||!date)return;
+  projects.push({id:Date.now(),name,cat,dueDate:date,done:false});
+  document.getElementById('new-proj-name').value='';
+  document.getElementById('new-proj-date').value='';
+  save(KEYS.projects,projects);renderProjects();
+}
+
+function renderCalendar(){
+  const yr=calViewDate.getFullYear(),mo=calViewDate.getMonth();
+  document.getElementById('cal-month-label').textContent=calViewDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  document.getElementById('cal-headers').innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-day-header">${d}</div>`).join('');
+  const first=new Date(yr,mo,1).getDay(), dim=new Date(yr,mo+1,0).getDate(), prev=new Date(yr,mo,0).getDate();
+  const allEvs=[...events,...gcalEvents];
+  const wc={all:'#639922',mom:'#D85A30',dad:'#378ADD',kid1:'#7F77DD',kid2:'#D85A30'};
+  let cells='';
+  for(let i=0;i<first;i++) cells+=`<div class="cal-day other-month"><div class="cal-num">${prev-first+1+i}</div></div>`;
+  for(let d=1;d<=dim;d++){
+    const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isT=(yr===today.getFullYear()&&mo===today.getMonth()&&d===today.getDate());
+    const dots=allEvs.filter(e=>e.date&&e.date.startsWith(ds)).slice(0,3).map(e=>`<div class="cal-dot" style="background:${e.gcalColor||wc[e.who]||'#888'}"></div>`).join('');
+    cells+=`<div class="cal-day${isT?' today':''}"><div class="cal-num">${d}</div>${dots}</div>`;
+  }
+  for(let d=1;d<=42-first-dim;d++) cells+=`<div class="cal-day other-month"><div class="cal-num">${d}</div></div>`;
+  document.getElementById('cal-body').innerHTML=cells;
+  renderEvents();
+}
+function changeMonth(dir){calViewDate.setMonth(calViewDate.getMonth()+dir);renderCalendar();}
+
+function renderEvents(){
+  const allEvs=[...events,...gcalEvents].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const upcoming=allEvs.filter(e=>new Date(e.date)>=today).slice(0,10);
+  const wl={all:'Everyone',mom:'Mom',dad:'Dad',kid1:'Kid 1',kid2:'Kid 2'};
+  const wc2={all:'w-all',mom:'w-mom',dad:'w-dad',kid1:'w-kid',kid2:'w-kid'};
+  const wcolor={all:'#639922',mom:'#D85A30',dad:'#378ADD',kid1:'#7F77DD',kid2:'#D85A30'};
+  const el=document.getElementById('event-list');
+  if(!upcoming.length){el.innerHTML='<div class="empty">No upcoming events</div>';return;}
+  el.innerHTML=upcoming.map(e=>{
+    const d=new Date(e.date);
+    const ds=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const ts=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    const color=e.gcalColor||wcolor[e.who]||'#888';
+    const tag=e.gcalFeedName?`<span class="who-tag w-gcal">${e.gcalFeedName}</span>`:`<span class="who-tag ${wc2[e.who]||'w-all'}">${wl[e.who]||e.who}</span>`;
+    const src=e.gcalFeedName?`<span class="ev-source">Google</span>`:'';
+    const del=e.gcalFeedName?'':`<button class="action-btn" onclick="deleteEvent(${e.id})"><i class="ti ti-trash"></i></button>`;
+    return`<div class="ev"><div class="ev-dot" style="background:${color}"></div><div style="flex:1;min-width:0"><div class="ev-title">${e.title}${src}</div><div class="ev-meta">${ds} · ${ts}</div></div>${tag}${del}</div>`;
+  }).join('');
+  updateStats();
+}
+function deleteEvent(id){events=events.filter(x=>x.id!==id);save(KEYS.events,events);renderCalendar();}
+function addEvent(){
+  const title=document.getElementById('new-ev-title').value.trim();
+  const date=document.getElementById('new-ev-date').value;
+  const who=document.getElementById('new-ev-who').value;
+  if(!title||!date)return;
+  events.push({id:Date.now(),title,date,who});
+  document.getElementById('new-ev-title').value='';
+  document.getElementById('new-ev-date').value='';
+  save(KEYS.events,events);renderCalendar();
+}
+
+function renderGrocery(){
+  const store=document.getElementById('grocery-store').value;
+  const filtered=store==='all'?groceries:groceries.filter(g=>g.store===store);
+  const list=document.getElementById('grocery-list');
+  if(!filtered.length){list.innerHTML='<div class="empty">Nothing here yet</div>';updateStats();return;}
+  const byStore={};
+  filtered.forEach(g=>{if(!byStore[g.store])byStore[g.store]=[];byStore[g.store].push(g);});
+  list.innerHTML=Object.entries(byStore).map(([s,items])=>`
+    <div class="grocery-section">
+      <div class="grocery-header"><i class="ti ti-building-store" style="font-size:14px"></i> ${s}</div>
+      ${items.map(g=>`<div class="grocery-item${g.checked?' checked':''}">
+        <input type="checkbox" ${g.checked?'checked':''} onchange="toggleGroc(${g.id})" />
+        <span style="flex:1">${g.name}</span>
+        <span class="qty">${g.qty}</span>
+        <button class="action-btn" onclick="deleteGroc(${g.id})"><i class="ti ti-x"></i></button>
+      </div>`).join('')}
+    </div>`).join('');
+  updateStats();
+}
+function toggleGroc(id){const g=groceries.find(x=>x.id===id);if(g){g.checked=!g.checked;save(KEYS.groceries,groceries);renderGrocery();}}
+function deleteGroc(id){groceries=groceries.filter(x=>x.id!==id);save(KEYS.groceries,groceries);renderGrocery();}
+function clearChecked(){groceries=groceries.filter(x=>!x.checked);save(KEYS.groceries,groceries);renderGrocery();}
+function addGrocery(){
+  const name=document.getElementById('new-groc-item').value.trim();
+  const qty=document.getElementById('new-groc-qty').value.trim();
+  const store=document.getElementById('new-groc-store').value;
+  if(!name)return;
+  groceries.push({id:Date.now(),name,qty:qty||'1',store,checked:false});
+  document.getElementById('new-groc-item').value='';
+  document.getElementById('new-groc-qty').value='';
+  save(KEYS.groceries,groceries);renderGrocery();
+}
+
+function updateStats(){
+  document.getElementById('stat-overdue').textContent=projects.filter(p=>getStatus(p)==='overdue').length;
+  document.getElementById('stat-soon').textContent=projects.filter(p=>getStatus(p)==='soon').length;
+  const weekOut=new Date(today.getTime()+7*86400000);
+  document.getElementById('stat-events').textContent=[...events,...gcalEvents].filter(e=>{const d=new Date(e.date);return d>=today&&d<=weekOut;}).length;
+  document.getElementById('stat-grocery').textContent=groceries.filter(g=>!g.checked).length;
+}
+
+function toggleGCalSetup(){
+  const b=document.getElementById('gcal-setup-body');
+  const visible=b.style.display!=='none';
+  b.style.display=visible?'none':'block';
+  document.getElementById('gcal-toggle-btn').textContent=visible?'Show setup':'Hide setup';
+  if(!visible)renderGCalList();
+}
+function renderGCalList(){
+  const el=document.getElementById('gcal-list');
+  if(!gcalFeeds.length){el.innerHTML='<div class="empty" style="text-align:left;padding:0.5rem 0">No calendars connected yet</div>';return;}
+  el.innerHTML=gcalFeeds.map((f,i)=>`
+    <div class="gcal-row">
+      <div class="gcal-dot" style="background:${f.color}"></div>
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${f.name}</div><div class="gcal-url">${f.url}</div></div>
+      <span class="badge ${f.status==='ok'?'b-ok':f.status==='error'?'b-overdue':'b-soon'}">${f.status==='ok'?'Connected':f.status==='error'?'Error':'Pending'}</span>
+      <button class="action-btn" onclick="removeGCal(${i})"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+function addGCal(){
+  const name=document.getElementById('new-gcal-name').value.trim();
+  const url=document.getElementById('new-gcal-url').value.trim();
+  const color=document.getElementById('new-gcal-color').value;
+  if(!name||!url)return;
+  gcalFeeds.push({name,url,color,status:'pending'});
+  document.getElementById('new-gcal-name').value='';
+  document.getElementById('new-gcal-url').value='';
+  save(KEYS.gcalFeeds,gcalFeeds);renderGCalList();syncGCal();
+}
+function removeGCal(i){
+  const name=gcalFeeds[i].name;
+  gcalFeeds.splice(i,1);
+  gcalEvents=gcalEvents.filter(e=>e.gcalFeedName!==name);
+  save(KEYS.gcalFeeds,gcalFeeds);renderGCalList();renderCalendar();
+}
+async function syncGCal(){
+  if(!gcalFeeds.length)return;
+  const btn=document.getElementById('gcal-sync-btn');
+  const status=document.getElementById('gcal-sync-status');
+  btn.disabled=true;btn.textContent='Syncing...';gcalEvents=[];
+  for(const feed of gcalFeeds){
+    try{
+      const url='https://api.allorigins.win/get?url='+encodeURIComponent(feed.url.replace('webcal://','https://'));
+      const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
+      const data=await res.json();
+      const parsed=parseICS(data.contents||'',feed.name,feed.color);
+      gcalEvents.push(...parsed);
+      feed.status='ok';
+    }catch(e){feed.status='error';}
+  }
+  save(KEYS.gcalFeeds,gcalFeeds);
+  btn.disabled=false;btn.textContent='Sync Google';
+  const ok=gcalFeeds.filter(f=>f.status==='ok').length;
+  const err=gcalFeeds.filter(f=>f.status==='error').length;
+  status.textContent=err?`${ok} ok, ${err} failed`:`${ok} synced`;
+  renderGCalList();renderCalendar();
+}
+function parseICS(ical,feedName,color){
+  const evs=[];
+  const blocks=ical.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g)||[];
+  const cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-1);
+  const future=new Date();future.setMonth(future.getMonth()+3);
+  for(const b of blocks){
+    try{
+      const title=((b.match(/SUMMARY:(.*)/)||[])[1]||'(no title)').trim().replace(/\\n/g,' ').replace(/\\,/g,',');
+      const raw=((b.match(/DTSTART(?:[^:]*)?:([\dTZ]+)/)||[])[1]||'');
+      if(!raw)continue;
+      const d=parseICSDate(raw);
+      if(!d||isNaN(d)||d<cutoff||d>future)continue;
+      evs.push({id:'g-'+Math.random(),title,date:d.toISOString().slice(0,16),gcalFeedName:feedName,gcalColor:color});
+    }catch(e){}
+  }
+  return evs;
+}
+function parseICSDate(r){
+  try{
+    r=r.trim();
+    if(r.length===8)return new Date(r.slice(0,4)+'-'+r.slice(4,6)+'-'+r.slice(6,8)+'T00:00:00');
+    if(r.endsWith('Z'))return new Date(r.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,'$1-$2-$3T$4:$5:$6Z'));
+    const m=r.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
+    if(m)return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`);
+  }catch(e){}return null;
+}
+
+init();
+</script>
+</body>
+</html>
