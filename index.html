@@ -152,6 +152,27 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .info-box{background:var(--bg2);border-radius:var(--r);padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:10px}
 .info-box strong{color:var(--text)}
 .empty{font-size:13px;color:var(--text3);text-align:center;padding:1.5rem 0}
+.podium{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:4px}
+.podium-slot{text-align:center;padding:16px 8px;border-radius:var(--rlg);border:0.5px solid var(--border);position:relative}
+.podium-slot.p1{background:var(--amber-bg);border-color:var(--amber-tx)}
+.podium-slot.p2{background:var(--gray-bg);border-color:var(--gray-tx)}
+.podium-slot.p3{background:var(--red-bg);border-color:var(--red-tx)}
+.podium-rank{font-size:22px;margin-bottom:6px}
+.podium-name{font-size:14px;font-weight:500;color:var(--text)}
+.podium-count{font-size:26px;font-weight:500;margin:4px 0}
+.podium-label{font-size:11px;color:var(--text2)}
+.lb-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:0.5px solid var(--border);font-size:14px}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{font-size:13px;font-weight:500;color:var(--text2);width:20px;text-align:center;flex-shrink:0}
+.lb-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0}
+.lb-name{flex:1;font-weight:500}
+.lb-count{font-size:13px;color:var(--text2)}
+.lb-bar-wrap{flex:1;height:6px;background:var(--bg2);border-radius:99px;overflow:hidden;min-width:40px}
+.lb-bar{height:100%;border-radius:99px;transition:width .4s}
+.recent-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+.recent-row:last-child{border-bottom:none}
+.recent-task{flex:1;color:var(--text)}
+.recent-when{font-size:12px;color:var(--text2)}
 .wk-day{cursor:pointer;transition:background .12s}
 .wk-day:hover{background:var(--bg2)}
 .wk-day.has-events{border-color:var(--border)}
@@ -239,6 +260,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <button class="tab active" onclick="switchTab('projects')"><i class="ti ti-tool"></i> Projects</button>
     <button class="tab" onclick="switchTab('calendar')"><i class="ti ti-calendar"></i> Calendar</button>
     <button class="tab" onclick="switchTab('shopping')"><i class="ti ti-shopping-cart"></i> Shopping</button>
+    <button class="tab" onclick="switchTab('leaderboard')"><i class="ti ti-trophy"></i> High Scores</button>
   </div>
 
   <!-- ── PROJECTS ─────────────────────────────── -->
@@ -396,6 +418,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
     </div>
   </div>
+
+  <!-- ── LEADERBOARD ──────────────────────────── -->
+  <div id="panel-leaderboard" class="panel">
+    <div class="card" id="lb-podium-card">
+      <div class="section-title">All-time completions</div>
+      <div id="lb-podium"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">This month</div>
+      <div id="lb-month"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Recent completions</div>
+      <div id="lb-recent"></div>
+    </div>
+  </div>
+
 </div><!-- .app -->
 
 <script>
@@ -404,8 +443,8 @@ const today = new Date(); today.setHours(0,0,0,0);
 document.getElementById('today-date').textContent =
   today.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
-const KEYS={projects:'hhq-projects',events:'hhq-events',groceries:'hhq-groceries',gcalFeeds:'hhq-gcalfeeds'};
-let projects=[], events=[], groceries=[], gcalFeeds=[], gcalEvents=[];
+const KEYS={projects:'hhq-projects',events:'hhq-events',groceries:'hhq-groceries',gcalFeeds:'hhq-gcalfeeds',completions:'hhq-completions'};
+let projects=[], events=[], groceries=[], gcalFeeds=[], gcalEvents=[], completions=[];
 
 // Week start = Sunday of current week
 let weekStart = new Date(today);
@@ -417,7 +456,10 @@ function save(key,data){
   catch(e){setSaveStatus('Could not save');}
 }
 function load(key,fb){try{const v=localStorage.getItem(key);return v?JSON.parse(v):fb;}catch(e){return fb;}}
-function setSaveStatus(m){document.getElementById('save-status').textContent=m;}
+function setSaveStatus(m){
+  const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  document.getElementById('save-status').textContent=m==='Loaded'?m:`${m} at ${t}`;
+}
 
 // ── DEFAULTS ──────────────────────────────────────────────────────
 function defProjects(){return[
@@ -451,6 +493,7 @@ function init(){
   events=load(KEYS.events,defEvents());
   groceries=load(KEYS.groceries,defGroceries());
   gcalFeeds=load(KEYS.gcalFeeds,[]);
+  completions=load(KEYS.completions,[]);
   setSaveStatus('Loaded');
   renderAll();
   if(gcalFeeds.length) syncGCal();
@@ -470,7 +513,7 @@ function switchTab(t){
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['projects','calendar','shopping'][i]===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
-  if(t==='calendar'){renderCalendar();renderGCalList();}
+  if(t==='calendar'){renderCalendar();renderGCalList();} if(t==='leaderboard'){renderLeaderboard();}
 }
 function renderAll(){renderProjects();renderCalendar();renderGrocery();}
 
@@ -535,7 +578,19 @@ function startEdit(id){const p=projects.find(x=>x.id===id);if(p){p._editing=true
 function editField(id,f,v){const p=projects.find(x=>x.id===id);if(p)p[f]=v;}
 function saveEdit(id){const p=projects.find(x=>x.id===id);if(p){delete p._editing;delete p._orig;save(KEYS.projects,projects);renderProjects();}}
 function cancelEdit(id){const p=projects.find(x=>x.id===id);if(p&&p._orig){Object.assign(p,p._orig);delete p._editing;delete p._orig;renderProjects();}}
-function toggleProj(id){const p=projects.find(x=>x.id===id);if(p){p.done=!p.done;save(KEYS.projects,projects);renderProjects();}}
+function toggleProj(id){
+  const p=projects.find(x=>x.id===id);
+  if(!p) return;
+  p.done=!p.done;
+  if(p.done){
+    const entry={task:p.name,who:p.who||'all',at:new Date().toISOString()};
+    completions.unshift(entry);
+    if(completions.length>200) completions=completions.slice(0,200);
+    save(KEYS.completions,completions);
+  }
+  save(KEYS.projects,projects);
+  renderProjects();
+}
 function deleteProj(id){if(!confirm('Delete this task?'))return;projects=projects.filter(x=>x.id!==id);save(KEYS.projects,projects);renderProjects();}
 function addProject(){
   const name=document.getElementById('new-proj-name').value.trim();
@@ -844,6 +899,82 @@ function parseICSDate(r){
     const m=r.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
     if(m)return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`);
   }catch(e){}return null;
+}
+
+// ── LEADERBOARD ──────────────────────────────────────────────────
+const LB_COLORS={all:'#639922',hoopie:'#D85A30',isaac:'#378ADD',auden:'#7F77DD',zev:'#D44'};
+const LB_INITIALS={all:'ALL',hoopie:'H',isaac:'I',auden:'A',zev:'Z'};
+const LB_NAMES={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'Zev'};
+const MEMBERS=['isaac','hoopie','auden','zev'];
+
+function renderLeaderboard(){
+  // Count all-time per person (from completions log + already-done projects)
+  const allTimeCounts={};
+  MEMBERS.forEach(m=>allTimeCounts[m]=0);
+  completions.forEach(c=>{if(allTimeCounts[c.who]!==undefined)allTimeCounts[c.who]++;});
+
+  // Count this month
+  const now=new Date();
+  const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  const monthCounts={};
+  MEMBERS.forEach(m=>monthCounts[m]=0);
+  completions.filter(c=>new Date(c.at)>=monthStart).forEach(c=>{if(monthCounts[c.who]!==undefined)monthCounts[c.who]++;});
+
+  // Sort for podium
+  const sorted=MEMBERS.map(m=>({who:m,count:allTimeCounts[m]})).sort((a,b)=>b.count-a.count);
+  const maxCount=Math.max(1,...sorted.map(x=>x.count));
+
+  // Podium (top 3)
+  const medals=['🥇','🥈','🥉'];
+  const podiumClasses=['p1','p2','p3'];
+  const podiumEl=document.getElementById('lb-podium');
+  if(sorted.every(x=>x.count===0)){
+    podiumEl.innerHTML='<div class="empty">No tasks completed yet — get going!</div>';
+  } else {
+    podiumEl.innerHTML=`<div class="podium">${sorted.slice(0,4).map((x,i)=>`
+      <div class="podium-slot ${podiumClasses[i]||''}">
+        <div class="podium-rank">${medals[i]||'🏅'}</div>
+        <div class="lb-avatar" style="background:${LB_COLORS[x.who]}22;color:${LB_COLORS[x.who]};margin:0 auto 6px">${LB_INITIALS[x.who]}</div>
+        <div class="podium-name">${LB_NAMES[x.who]}</div>
+        <div class="podium-count" style="color:${LB_COLORS[x.who]}">${x.count}</div>
+        <div class="podium-label">tasks done</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Month list with bars
+  const monthSorted=MEMBERS.map(m=>({who:m,count:monthCounts[m]})).sort((a,b)=>b.count-a.count);
+  const maxMonth=Math.max(1,...monthSorted.map(x=>x.count));
+  const monthEl=document.getElementById('lb-month');
+  const monthName=now.toLocaleDateString('en-US',{month:'long'});
+  if(monthSorted.every(x=>x.count===0)){
+    monthEl.innerHTML=`<div class="empty">No completions in ${monthName} yet</div>`;
+  } else {
+    monthEl.innerHTML=monthSorted.map((x,i)=>`
+      <div class="lb-row">
+        <div class="lb-rank">${i+1}</div>
+        <div class="lb-avatar" style="background:${LB_COLORS[x.who]}22;color:${LB_COLORS[x.who]}">${LB_INITIALS[x.who]}</div>
+        <div class="lb-name">${LB_NAMES[x.who]}</div>
+        <div class="lb-bar-wrap"><div class="lb-bar" style="width:${Math.round((x.count/maxMonth)*100)}%;background:${LB_COLORS[x.who]}"></div></div>
+        <div class="lb-count">${x.count}</div>
+      </div>`).join('');
+  }
+
+  // Recent completions
+  const recentEl=document.getElementById('lb-recent');
+  if(!completions.length){
+    recentEl.innerHTML='<div class="empty">Completed tasks will appear here</div>';
+  } else {
+    recentEl.innerHTML=completions.slice(0,10).map(c=>{
+      const d=new Date(c.at);
+      const when=d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      return`<div class="recent-row">
+        <div class="lb-avatar" style="background:${LB_COLORS[c.who]||'#888'}22;color:${LB_COLORS[c.who]||'#888'};width:28px;height:28px;font-size:12px;flex-shrink:0">${LB_INITIALS[c.who]||'?'}</div>
+        <div class="recent-task">${c.task}</div>
+        <div class="recent-when">${when}</div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ── PASSWORD ──────────────────────────────────────────────────────
