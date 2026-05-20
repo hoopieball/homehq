@@ -152,6 +152,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .info-box{background:var(--bg2);border-radius:var(--r);padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:10px}
 .info-box strong{color:var(--text)}
 .empty{font-size:13px;color:var(--text3);text-align:center;padding:1.5rem 0}
+.wk-day{cursor:pointer;transition:background .12s}
+.wk-day:hover{background:var(--bg2)}
+.wk-day.has-events{border-color:var(--border)}
+.wk-day.selected{background:var(--blue-bg);border-color:var(--blue-tx)}
+.wk-day.selected .wk-num{color:var(--blue-tx)}
 
 /* ── TABLET (iPad) ─────────────────────────────── */
 @media(min-width:600px){
@@ -233,7 +238,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="tabs">
     <button class="tab active" onclick="switchTab('projects')"><i class="ti ti-tool"></i> Projects</button>
     <button class="tab" onclick="switchTab('calendar')"><i class="ti ti-calendar"></i> Calendar</button>
-    <button class="tab" onclick="switchTab('grocery')"><i class="ti ti-shopping-cart"></i> Groceries</button>
+    <button class="tab" onclick="switchTab('shopping')"><i class="ti ti-shopping-cart"></i> Shopping</button>
   </div>
 
   <!-- ── PROJECTS ─────────────────────────────── -->
@@ -263,10 +268,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <input type="text" id="new-proj-name" placeholder="Task name..." style="flex:2;min-width:140px"/>
         <input type="date" id="new-proj-date" style="min-width:130px"/>
         <select id="new-proj-cat" style="min-width:100px">
-          <option value="🌡️">🌡️ HVAC</option><option value="💧">💧 Plumbing</option>
-          <option value="⚡">⚡ Electric</option><option value="🏡">🏡 Exterior</option>
-          <option value="🧹">🧹 Cleaning</option><option value="🔧">🔧 Repair</option>
-          <option value="🌿">🌿 Yard</option><option value="📦">📦 Other</option>
+          <option value="🏠">🏠 House</option>
+          <option value="🌿">🌿 Yard</option>
+          <option value="🧹">🧹 Cleaning</option>
+          <option value="✅">✅ To-do</option>
+          <option value="🎉">🎉 For fun</option>
+          <option value="📦">📦 Other</option>
         </select>
         <select id="new-proj-who" style="min-width:100px">
           <option value="all">Everyone</option>
@@ -284,14 +291,30 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div id="panel-calendar" class="panel">
     <div class="card">
       <div class="top-row">
-        <div class="section-title" style="margin-bottom:0" id="cal-week-label"></div>
-        <div style="display:flex;gap:4px">
+        <div style="display:flex;align-items:center;gap:8px">
           <button class="action-btn" onclick="changeWeek(-1)" title="Previous week"><i class="ti ti-chevron-left"></i></button>
+          <div class="section-title" style="margin-bottom:0" id="cal-week-label"></div>
           <button class="action-btn" onclick="changeWeek(1)" title="Next week"><i class="ti ti-chevron-right"></i></button>
         </div>
+        <select id="cal-filter-who" onchange="renderCalendar()" style="font-size:12px;padding:5px 24px 5px 8px;width:auto">
+          <option value="all">Everyone</option>
+          <option value="hoopie">Hoopie</option>
+          <option value="isaac">Isaac</option>
+          <option value="auden">Auden</option>
+          <option value="zev">Zev</option>
+        </select>
       </div>
       <div class="week-grid" id="cal-headers"></div>
       <div class="week-grid" id="cal-body"></div>
+    </div>
+
+    <!-- DAY DETAIL (hidden until a day is clicked) -->
+    <div class="card" id="day-detail-card" style="display:none">
+      <div class="top-row">
+        <div class="section-title" style="margin-bottom:0" id="day-detail-label"></div>
+        <button class="action-btn" onclick="closeDayDetail()"><i class="ti ti-x"></i></button>
+      </div>
+      <div id="day-detail-list"></div>
     </div>
 
     <div class="card">
@@ -339,7 +362,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- ── GROCERY ───────────────────────────────── -->
-  <div id="panel-grocery" class="panel">
+  <div id="panel-shopping" class="panel">
     <div class="store-bar">
       <select id="grocery-store" onchange="renderGrocery()">
         <option value="all">All stores</option>
@@ -444,7 +467,7 @@ function weekEnd(){const e=new Date(weekStart);e.setDate(weekStart.getDate()+6);
 
 // ── TABS ──────────────────────────────────────────────────────────
 function switchTab(t){
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['projects','calendar','grocery'][i]===t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['projects','calendar','shopping'][i]===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
   if(t==='calendar'){renderCalendar();renderGCalList();}
@@ -452,7 +475,7 @@ function switchTab(t){
 function renderAll(){renderProjects();renderCalendar();renderGrocery();}
 
 // ── PROJECTS ──────────────────────────────────────────────────────
-const CAT_OPTIONS=['🌡️','💧','⚡','🏡','🧹','🔧','🌿','📦'];
+const CAT_OPTIONS=['🏠','🌿','🧹','✅','🎉','📦'];
 const WHO_OPTIONS=['all','isaac','hoopie','auden','zev'];
 const WHO_LABELS={all:'Everyone',isaac:'Isaac',hoopie:'Hoopie',auden:'Auden',zev:'Zev'};
 const WHO_COLORS={all:'w-all',isaac:'w-dad',hoopie:'w-mom',auden:'w-kid',zev:'w-kid'};
@@ -529,6 +552,21 @@ function addProject(){
 // ── CALENDAR ──────────────────────────────────────────────────────
 const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const WHO_COLOR={all:'#639922',hoopie:'#D85A30',isaac:'#378ADD',auden:'#7F77DD',zev:'#D85A30'};
+const WHO_LABELS_CAL={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'Zev'};
+const WHO_CLASS_CAL={all:'w-all',hoopie:'w-mom',isaac:'w-dad',auden:'w-kid',zev:'w-kid'};
+
+let selectedDay=null;
+
+function getCalWhoFilter(){
+  const el=document.getElementById('cal-filter-who');
+  return el?el.value:'all';
+}
+
+function filterEvsByWho(evs){
+  const who=getCalWhoFilter();
+  if(who==='all') return evs;
+  return evs.filter(e=>e.who===who||e.gcalFeedName===who);
+}
 
 function renderCalendar(){
   const ws=new Date(weekStart);
@@ -536,42 +574,93 @@ function renderCalendar(){
   const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   document.getElementById('cal-week-label').textContent=fmt(ws)+' – '+fmt(we);
 
-  // Headers with day name
   document.getElementById('cal-headers').innerHTML=DAY_NAMES.map(d=>
     `<div class="wk-header">${d}</div>`).join('');
 
-  const allEvs=[...events,...gcalEvents];
+  const allEvs=filterEvsByWho([...events,...gcalEvents]);
   let cells='';
   for(let i=0;i<7;i++){
     const day=new Date(ws); day.setDate(ws.getDate()+i);
     const ds=toDateStr(day);
     const isT=ds===toDateStr(today);
+    const isSel=ds===selectedDay;
     const dayEvs=allEvs.filter(e=>e.date&&e.date.startsWith(ds));
+    const hasEvs=dayEvs.length>0;
     const dots=dayEvs.slice(0,3).map(e=>{
       const c=e.gcalColor||WHO_COLOR[e.who]||'#888';
       return`<div class="cal-dot" style="background:${c}"></div>`;
     }).join('');
-    cells+=`<div class="wk-day${isT?' today':''}">
+    let cls='wk-day';
+    if(isT) cls+=' today';
+    if(isSel) cls+=' selected';
+    if(hasEvs) cls+=' has-events';
+    cells+=`<div class="${cls}" onclick="selectDay('${ds}')">
       <div class="wk-num">${day.getDate()}</div>
       ${dots}
     </div>`;
   }
   document.getElementById('cal-body').innerHTML=cells;
+  if(selectedDay) showDayDetail(selectedDay);
   renderEvents();
+}
+
+function selectDay(ds){
+  if(selectedDay===ds){ closeDayDetail(); return; }
+  selectedDay=ds;
+  renderCalendar();
+}
+
+function showDayDetail(ds){
+  const card=document.getElementById('day-detail-card');
+  const label=document.getElementById('day-detail-label');
+  const list=document.getElementById('day-detail-list');
+  const d=new Date(ds+'T00:00:00');
+  label.textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const allEvs=filterEvsByWho([...events,...gcalEvents]);
+  const dayEvs=allEvs.filter(e=>e.date&&e.date.startsWith(ds)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(!dayEvs.length){
+    list.innerHTML='<div class="empty">No events this day</div>';
+  } else {
+    list.innerHTML=dayEvs.map(e=>{
+      const t=new Date(e.date);
+      const ts=t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const color=e.gcalColor||WHO_COLOR[e.who]||'#888';
+      const tag=e.gcalFeedName
+        ?`<span class="who-tag w-gcal">${e.gcalFeedName}</span>`
+        :`<span class="who-tag ${WHO_CLASS_CAL[e.who]||'w-all'}">${WHO_LABELS_CAL[e.who]||e.who}</span>`;
+      const src=e.gcalFeedName?`<span class="ev-source">Google</span>`:'';
+      const del=e.gcalFeedName?'':`<button class="action-btn" onclick="deleteEvent(${e.id})"><i class="ti ti-trash"></i></button>`;
+      return`<div class="ev">
+        <div class="ev-dot" style="background:${color}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="ev-title">${e.title}${src}</div>
+          <div class="ev-meta">${ts}</div>
+        </div>
+        ${tag}${del}
+      </div>`;
+    }).join('');
+  }
+  card.style.display='block';
+}
+
+function closeDayDetail(){
+  selectedDay=null;
+  document.getElementById('day-detail-card').style.display='none';
+  renderCalendar();
 }
 
 function changeWeek(dir){
   weekStart.setDate(weekStart.getDate()+(dir*7));
+  selectedDay=null;
+  document.getElementById('day-detail-card').style.display='none';
   renderCalendar();
 }
 
 function renderEvents(){
   const ws=new Date(weekStart);
   const we=new Date(weekEnd()); we.setHours(23,59,59);
-  const allEvs=[...events,...gcalEvents].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const allEvs=filterEvsByWho([...events,...gcalEvents]).sort((a,b)=>new Date(a.date)-new Date(b.date));
   const visible=allEvs.filter(e=>{const d=new Date(e.date);return d>=ws&&d<=we;});
-  const wl={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'Zev'};
-  const wc2={all:'w-all',hoopie:'w-mom',isaac:'w-dad',auden:'w-kid',zev:'w-kid'};
   const el=document.getElementById('event-list');
   if(!visible.length){el.innerHTML='<div class="empty">No events this week</div>';updateStats();return;}
   el.innerHTML=visible.map(e=>{
@@ -581,7 +670,7 @@ function renderEvents(){
     const color=e.gcalColor||WHO_COLOR[e.who]||'#888';
     const tag=e.gcalFeedName
       ?`<span class="who-tag w-gcal">${e.gcalFeedName}</span>`
-      :`<span class="who-tag ${wc2[e.who]||'w-all'}">${wl[e.who]||e.who}</span>`;
+      :`<span class="who-tag ${WHO_CLASS_CAL[e.who]||'w-all'}">${WHO_LABELS_CAL[e.who]||e.who}</span>`;
     const src=e.gcalFeedName?`<span class="ev-source">Google</span>`:'';
     const del=e.gcalFeedName?'':`<button class="action-btn" onclick="deleteEvent(${e.id})"><i class="ti ti-trash"></i></button>`;
     return`<div class="ev">
