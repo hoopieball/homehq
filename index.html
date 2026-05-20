@@ -672,30 +672,23 @@ function parseICSDate(r){
 
 init();
 
-(function(){
-  const PASS='REMOVED';
-  const SESSION_KEY='hhq-unlocked';
-  function checkPassword(){
-    const val=document.getElementById('lock-input').value;
-    if(val===PASS){
-      sessionStorage.setItem(SESSION_KEY,'1');
-      document.getElementById('lock-screen').style.display='none';
-    } else {
-      const err=document.getElementById('lock-error');
-      err.textContent='Wrong password, try again';
-      document.getElementById('lock-input').value='';
-      document.getElementById('lock-input').focus();
-      setTimeout(()=>err.textContent='',2500);
-    }
+function checkPassword(){
+  const val=document.getElementById('lock-input').value;
+  if(val==='REMOVED'){
+    sessionStorage.setItem('hhq-unlocked','1');
+    document.getElementById('lock-screen').style.display='none';
+  } else {
+    const err=document.getElementById('lock-error');
+    err.textContent='Wrong password, try again';
+    document.getElementById('lock-input').value='';
+    document.getElementById('lock-input').focus();
+    setTimeout(()=>{err.textContent='';},2500);
   }
-  window.checkPassword=checkPassword;
-  if(sessionStorage.getItem(SESSION_KEY)==='1'){
-    document.addEventListener('DOMContentLoaded',()=>{
-      const ls=document.getElementById('lock-screen');
-      if(ls) ls.style.display='none';
-    });
-  }
-})();
+}
+if(sessionStorage.getItem('hhq-unlocked')==='1'){
+  const ls=document.getElementById('lock-screen');
+  if(ls) ls.style.display='none';
+}
 
 </script>
 </body>
