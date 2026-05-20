@@ -303,6 +303,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <option value="zev">Zev</option>
           </select>
           <select id="proj-filter" onchange="renderProjects()" style="font-size:12px;padding:5px 24px 5px 8px;width:auto">
+            <option value="active">Active</option>
             <option value="all">All</option>
             <option value="overdue">Overdue</option>
             <option value="soon">Due soon</option>
@@ -579,9 +580,14 @@ function renderProjects(){
   const whoF=document.getElementById('proj-filter-who').value;
   const list=document.getElementById('proj-list');
   const filtered=projects.filter(p=>{
-    const sOk=filter==='all'||getStatus(p)===filter;
+    const s=getStatus(p);
+    const sOk=filter==='all'||(filter==='active'?s!=='done':s===filter);
     const wOk=whoF==='all'||(p.who||'all')===whoF;
     return sOk&&wOk;
+  }).sort((a,b)=>{
+    const aDone=a.done?1:0, bDone=b.done?1:0;
+    if(aDone!==bDone) return aDone-bDone;
+    return 0;
   });
   if(!filtered.length){list.innerHTML='<div class="empty">No tasks match</div>';updateStats();return;}
   const bc={overdue:'b-overdue',soon:'b-soon',ok:'b-ok',done:'b-done'};
@@ -879,23 +885,37 @@ async function removeGCal(i){
 }
 async function fetchICS(rawUrl){
   const url=rawUrl.trim().replace('webcal://','https://');
+  console.log('[GCal] Fetching:', url);
   const proxies=[
-    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
-    u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-    u=>`https://cors-anywhere.herokuapp.com/${u}`,
+    {name:'corsproxy.io',   fn:u=>`https://corsproxy.io/?${encodeURIComponent(u)}`},
+    {name:'allorigins',     fn:u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`},
+    {name:'thingproxy',     fn:u=>`https://thingproxy.freeboard.io/fetch/${u}`},
+    {name:'jsonp.afeld',    fn:u=>`https://jsonp.afeld.me/?url=${encodeURIComponent(u)}`},
   ];
-  for(const mk of proxies){
+  const errors=[];
+  for(const proxy of proxies){
     try{
-      const res=await fetch(mk(url),{signal:AbortSignal.timeout(10000)});
-      if(!res.ok)continue;
+      console.log('[GCal] Trying proxy:', proxy.name);
+      const res=await fetch(proxy.fn(url),{signal:AbortSignal.timeout(12000)});
+      console.log('[GCal]', proxy.name, 'status:', res.status);
+      if(!res.ok){errors.push(`${proxy.name}: HTTP ${res.status}`);continue;}
       const text=await res.text();
-      if(text.includes('BEGIN:VCALENDAR'))return text;
-      const json=JSON.parse(text);
-      const c=json.contents||json.body||'';
-      if(c.includes('BEGIN:VCALENDAR'))return c;
-    }catch(e){continue;}
+      if(text.includes('BEGIN:VCALENDAR')){console.log('[GCal] Success via', proxy.name);return text;}
+      // Try JSON wrapper (allorigins style)
+      try{
+        const json=JSON.parse(text);
+        const c=json.contents||json.body||'';
+        if(c.includes('BEGIN:VCALENDAR')){console.log('[GCal] Success (JSON) via', proxy.name);return c;}
+      }catch(e){}
+      errors.push(`${proxy.name}: no VCALENDAR in response`);
+    }catch(e){
+      console.warn('[GCal]', proxy.name, 'failed:', e.message);
+      errors.push(`${proxy.name}: ${e.message}`);
+    }
   }
-  throw new Error('All proxies failed');
+  const msg='All proxies failed: '+errors.join(' | ');
+  console.error('[GCal]', msg);
+  throw new Error(msg);
 }
 async function syncGCal(){
   if(!gcalFeeds.length)return;
@@ -916,8 +936,13 @@ async function syncGCal(){
   }catch(e){lsSave('hhq-gcalfeeds',gcalFeeds);}
   btn.disabled=false;btn.textContent='Sync Google';
   const ok=gcalFeeds.filter(f=>f.status==='ok').length;
-  const err=gcalFeeds.filter(f=>f.status==='error').length;
-  st.textContent=err?`${ok} ok, ${err} failed`:`${ok} synced`;
+  const errFeeds=gcalFeeds.filter(f=>f.status==='error');
+  if(errFeeds.length){
+    st.textContent=`${ok} ok, ${errFeeds.length} failed`;
+    console.error('[GCal] Failed feeds:', errFeeds.map(f=>f.name+': '+f.lastError).join(', '));
+  } else {
+    st.textContent=`${ok} synced`;
+  }
   renderGCalList();renderCalendar();
 }
 function parseICS(ical,feedName,color,feedWho){
