@@ -439,11 +439,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 <script>
 // ── GLOBALS ──────────────────────────────────────────────────────
+const SB_URL='https://gcaxejqskjfsqeiwjkdv.supabase.co';
+const SB_KEY='sb_publishable_BgIq2Zr0qlBGkabr3WeXow_z4YXfJEy';
+async function sbFetch(table,method='GET',body=null,query=''){
+  const res=await fetch(`${SB_URL}/rest/v1/${table}${query}`,{
+    method,
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':method==='POST'?'return=representation':''},
+    body:body?JSON.stringify(body):null
+  });
+  if(!res.ok){const e=await res.text();throw new Error(e);}
+  return method==='DELETE'||method==='PATCH'?null:res.json();
+}
 const today = new Date(); today.setHours(0,0,0,0);
 document.getElementById('today-date').textContent =
   today.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
-const KEYS={projects:'hhq-projects',events:'hhq-events',groceries:'hhq-groceries',gcalFeeds:'hhq-gcalfeeds',completions:'hhq-completions'};
+const KEYS={projects:'projects',events:'events',groceries:'shopping',gcalFeeds:'gcal_feeds',completions:'completions'};
 let projects=[], events=[], groceries=[], gcalFeeds=[], gcalEvents=[], completions=[];
 
 // Week start = Sunday of current week
@@ -451,15 +462,13 @@ let weekStart = new Date(today);
 weekStart.setDate(today.getDate() - today.getDay());
 
 // ── STORAGE ───────────────────────────────────────────────────────
-function save(key,data){
-  try{localStorage.setItem(key,JSON.stringify(data));setSaveStatus('All changes saved');}
-  catch(e){setSaveStatus('Could not save');}
-}
-function load(key,fb){try{const v=localStorage.getItem(key);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function setSaveStatus(m){
   const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   document.getElementById('save-status').textContent=m==='Loaded'?m:`${m} at ${t}`;
 }
+// localStorage fallback for offline resilience
+function lsSave(key,data){try{localStorage.setItem(key,JSON.stringify(data));}catch(e){}}
+function lsLoad(key,fb){try{const v=localStorage.getItem(key);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 
 // ── DEFAULTS ──────────────────────────────────────────────────────
 function defProjects(){return[
@@ -488,13 +497,33 @@ function defGroceries(){return[
   {id:5,name:'Laundry detergent',qty:'1',store:'Target',checked:false},
 ];}
 
-function init(){
-  projects=load(KEYS.projects,defProjects());
-  events=load(KEYS.events,defEvents());
-  groceries=load(KEYS.groceries,defGroceries());
-  gcalFeeds=load(KEYS.gcalFeeds,[]);
-  completions=load(KEYS.completions,[]);
-  setSaveStatus('Loaded');
+async function init(){
+  setSaveStatus('Loading...');
+  try{
+    const [pr,ev,gr,gf,co]=await Promise.all([
+      sbFetch('projects','GET',null,'?order=created_at.asc'),
+      sbFetch('events','GET',null,'?order=created_at.asc'),
+      sbFetch('shopping','GET',null,'?order=created_at.asc'),
+      sbFetch('gcal_feeds','GET',null,'?order=id.asc'),
+      sbFetch('completions','GET',null,'?order=at.desc&limit=200'),
+    ]);
+    projects=pr.length?pr:defProjects().map(p=>({...p,due_date:p.dueDate}));
+    events=ev.length?ev:defEvents();
+    groceries=gr.length?gr:defGroceries();
+    gcalFeeds=gf||[];
+    completions=co||[];
+    // normalise due_date -> dueDate for projects
+    projects=projects.map(p=>({...p,dueDate:p.due_date||p.dueDate}));
+    setSaveStatus('Loaded');
+  }catch(e){
+    console.error('Supabase load failed, using local',e);
+    projects=lsLoad('hhq-projects',defProjects());
+    events=lsLoad('hhq-events',defEvents());
+    groceries=lsLoad('hhq-groceries',defGroceries());
+    gcalFeeds=lsLoad('hhq-gcalfeeds',[]);
+    completions=lsLoad('hhq-completions',[]);
+    setSaveStatus('Offline — changes saved locally');
+  }
   renderAll();
   if(gcalFeeds.length) syncGCal();
 }
@@ -576,32 +605,49 @@ function renderProjects(){
 }
 function startEdit(id){const p=projects.find(x=>x.id===id);if(p){p._editing=true;p._orig={name:p.name,cat:p.cat,dueDate:p.dueDate,who:p.who};renderProjects();}}
 function editField(id,f,v){const p=projects.find(x=>x.id===id);if(p)p[f]=v;}
-function saveEdit(id){const p=projects.find(x=>x.id===id);if(p){delete p._editing;delete p._orig;save(KEYS.projects,projects);renderProjects();}}
-function cancelEdit(id){const p=projects.find(x=>x.id===id);if(p&&p._orig){Object.assign(p,p._orig);delete p._editing;delete p._orig;renderProjects();}}
-function toggleProj(id){
-  const p=projects.find(x=>x.id===id);
-  if(!p) return;
-  p.done=!p.done;
-  if(p.done){
-    const entry={task:p.name,who:p.who||'all',at:new Date().toISOString()};
-    completions.unshift(entry);
-    if(completions.length>200) completions=completions.slice(0,200);
-    save(KEYS.completions,completions);
-  }
-  save(KEYS.projects,projects);
+async function saveEdit(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  delete p._editing;delete p._orig;
+  try{await sbFetch('projects','PATCH',{name:p.name,cat:p.cat,due_date:p.dueDate,who:p.who,done:p.done},`?id=eq.${p.id}`);setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-projects',projects);setSaveStatus('Saved locally');}
   renderProjects();
 }
-function deleteProj(id){if(!confirm('Delete this task?'))return;projects=projects.filter(x=>x.id!==id);save(KEYS.projects,projects);renderProjects();}
-function addProject(){
+function cancelEdit(id){const p=projects.find(x=>x.id===id);if(p&&p._orig){Object.assign(p,p._orig);delete p._editing;delete p._orig;renderProjects();}}
+async function toggleProj(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  p.done=!p.done;
+  try{
+    await sbFetch('projects','PATCH',{done:p.done},`?id=eq.${p.id}`);
+    if(p.done){
+      const entry={task:p.name,who:p.who||'all',at:new Date().toISOString()};
+      completions.unshift(entry);
+      if(completions.length>200)completions=completions.slice(0,200);
+      await sbFetch('completions','POST',{task:p.name,who:p.who||'all'});
+    }
+    setSaveStatus('All changes saved');
+  }catch(e){lsSave('hhq-projects',projects);setSaveStatus('Saved locally');}
+  renderProjects();
+}
+async function deleteProj(id){
+  if(!confirm('Delete this task?'))return;
+  projects=projects.filter(x=>x.id!==id);
+  try{await sbFetch('projects','DELETE',null,`?id=eq.${id}`);setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-projects',projects);setSaveStatus('Saved locally');}
+  renderProjects();
+}
+async function addProject(){
   const name=document.getElementById('new-proj-name').value.trim();
   const date=document.getElementById('new-proj-date').value;
   const cat=document.getElementById('new-proj-cat').value;
   const who=document.getElementById('new-proj-who').value;
   if(!name||!date)return;
-  projects.push({id:Date.now(),name,cat,dueDate:date,who,done:false});
+  const newP={id:Date.now(),name,cat,due_date:date,dueDate:date,who,done:false};
+  projects.push(newP);
   document.getElementById('new-proj-name').value='';
   document.getElementById('new-proj-date').value='';
-  save(KEYS.projects,projects);renderProjects();
+  renderProjects();
+  try{await sbFetch('projects','POST',{id:newP.id,name,cat,due_date:date,who,done:false});setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-projects',projects);setSaveStatus('Saved locally');}
 }
 
 // ── CALENDAR ──────────────────────────────────────────────────────
@@ -740,16 +786,24 @@ function renderEvents(){
   updateStats();
 }
 
-function deleteEvent(id){events=events.filter(x=>x.id!==id);save(KEYS.events,events);renderCalendar();}
-function addEvent(){
+async function deleteEvent(id){
+  events=events.filter(x=>x.id!==id);
+  try{await sbFetch('events','DELETE',null,`?id=eq.${id}`);setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-events',events);setSaveStatus('Saved locally');}
+  renderCalendar();
+}
+async function addEvent(){
   const title=document.getElementById('new-ev-title').value.trim();
   const date=document.getElementById('new-ev-date').value;
   const who=document.getElementById('new-ev-who').value;
   if(!title||!date)return;
-  events.push({id:Date.now(),title,date,who});
+  const newE={id:Date.now(),title,date,who};
+  events.push(newE);
   document.getElementById('new-ev-title').value='';
   document.getElementById('new-ev-date').value='';
-  save(KEYS.events,events);renderCalendar();
+  renderCalendar();
+  try{await sbFetch('events','POST',newE);setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-events',events);setSaveStatus('Saved locally');}
 }
 
 // ── GROCERY ───────────────────────────────────────────────────────
@@ -772,18 +826,37 @@ function renderGrocery(){
     </div>`).join('');
   updateStats();
 }
-function toggleGroc(id){const g=groceries.find(x=>x.id===id);if(g){g.checked=!g.checked;save(KEYS.groceries,groceries);renderGrocery();}}
-function deleteGroc(id){groceries=groceries.filter(x=>x.id!==id);save(KEYS.groceries,groceries);renderGrocery();}
-function clearChecked(){groceries=groceries.filter(x=>!x.checked);save(KEYS.groceries,groceries);renderGrocery();}
-function addGrocery(){
+async function toggleGroc(id){
+  const g=groceries.find(x=>x.id===id);if(!g)return;
+  g.checked=!g.checked;
+  try{await sbFetch('shopping','PATCH',{checked:g.checked},`?id=eq.${id}`);setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-groceries',groceries);setSaveStatus('Saved locally');}
+  renderGrocery();
+}
+async function deleteGroc(id){
+  groceries=groceries.filter(x=>x.id!==id);
+  try{await sbFetch('shopping','DELETE',null,`?id=eq.${id}`);setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-groceries',groceries);setSaveStatus('Saved locally');}
+  renderGrocery();
+}
+async function clearChecked(){
+  groceries=groceries.filter(x=>!x.checked);
+  try{await sbFetch('shopping','DELETE',null,'?checked=eq.true');setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-groceries',groceries);setSaveStatus('Saved locally');}
+  renderGrocery();
+}
+async function addGrocery(){
   const name=document.getElementById('new-groc-item').value.trim();
   const qty=document.getElementById('new-groc-qty').value.trim();
   const store=document.getElementById('new-groc-store').value;
   if(!name)return;
-  groceries.push({id:Date.now(),name,qty:qty||'1',store,checked:false});
+  const newG={id:Date.now(),name,qty:qty||'1',store,checked:false};
+  groceries.push(newG);
   document.getElementById('new-groc-item').value='';
   document.getElementById('new-groc-qty').value='';
-  save(KEYS.groceries,groceries);renderGrocery();
+  renderGrocery();
+  try{await sbFetch('shopping','POST',newG);setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-groceries',groceries);setSaveStatus('Saved locally');}
 }
 
 // ── STATS ─────────────────────────────────────────────────────────
@@ -817,21 +890,26 @@ function renderGCalList(){
       <button class="action-btn" onclick="removeGCal(${i})"><i class="ti ti-trash"></i></button>
     </div>`).join('');
 }
-function addGCal(){
+async function addGCal(){
   const name=document.getElementById('new-gcal-name').value.trim();
   const url=document.getElementById('new-gcal-url').value.trim();
   const color=document.getElementById('new-gcal-color').value;
   if(!name||!url)return;
-  gcalFeeds.push({name,url,color,status:'pending'});
+  const newF={name,url,color,status:'pending'};
+  gcalFeeds.push(newF);
   document.getElementById('new-gcal-name').value='';
   document.getElementById('new-gcal-url').value='';
-  save(KEYS.gcalFeeds,gcalFeeds);renderGCalList();syncGCal();
+  try{await sbFetch('gcal_feeds','POST',{name,url,color,status:'pending'});setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-gcalfeeds',gcalFeeds);setSaveStatus('Saved locally');}
+  renderGCalList();syncGCal();
 }
-function removeGCal(i){
-  const name=gcalFeeds[i].name;
+async function removeGCal(i){
+  const feed=gcalFeeds[i];
   gcalFeeds.splice(i,1);
-  gcalEvents=gcalEvents.filter(e=>e.gcalFeedName!==name);
-  save(KEYS.gcalFeeds,gcalFeeds);renderGCalList();renderCalendar();
+  gcalEvents=gcalEvents.filter(e=>e.gcalFeedName!==feed.name);
+  try{await sbFetch('gcal_feeds','DELETE',null,`?id=eq.${feed.id}`);setSaveStatus('All changes saved');}
+  catch(e){lsSave('hhq-gcalfeeds',gcalFeeds);setSaveStatus('Saved locally');}
+  renderGCalList();renderCalendar();
 }
 async function fetchICS(rawUrl){
   const url=rawUrl.trim().replace('webcal://','https://');
@@ -865,7 +943,11 @@ async function syncGCal(){
       feed.status='ok';feed.lastError='';
     }catch(e){feed.status='error';feed.lastError=e.message||'Failed';}
   }
-  save(KEYS.gcalFeeds,gcalFeeds);
+  try{
+    for(const f of gcalFeeds){
+      if(f.id) await sbFetch('gcal_feeds','PATCH',{status:f.status},`?id=eq.${f.id}`);
+    }
+  }catch(e){lsSave('hhq-gcalfeeds',gcalFeeds);}
   btn.disabled=false;btn.textContent='Sync Google';
   const ok=gcalFeeds.filter(f=>f.status==='ok').length;
   const err=gcalFeeds.filter(f=>f.status==='error').length;
