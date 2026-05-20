@@ -140,9 +140,31 @@
   .store-filter { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
   .empty { font-size: 13px; color: var(--text3); text-align: center; padding: 1.5rem 0; }
   .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+
+  .lock-screen { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg3); display:flex; align-items:center; justify-content:center; z-index:9999; }
+  .lock-card { background:var(--bg); border:0.5px solid var(--border); border-radius:var(--radius-lg); padding:2rem 2rem 1.75rem; width:100%; max-width:320px; text-align:center; }
+  .lock-icon { font-size:32px; margin-bottom:1rem; }
+  .lock-title { font-size:18px; font-weight:500; margin-bottom:4px; }
+  .lock-sub { font-size:13px; color:var(--text2); margin-bottom:1.5rem; }
+  .lock-input { width:100%; text-align:center; font-size:22px; letter-spacing:6px; margin-bottom:12px; }
+  .lock-btn { width:100%; padding:10px; font-size:14px; font-weight:500; }
+  .lock-error { font-size:13px; color:var(--red-text); margin-top:8px; min-height:18px; }
+
 </style>
 </head>
 <body>
+
+<div class="lock-screen" id="lock-screen">
+  <div class="lock-card">
+    <div class="lock-icon">🏠</div>
+    <div class="lock-title">Home HQ</div>
+    <div class="lock-sub">Enter the family password</div>
+    <input class="lock-input" type="password" id="lock-input" maxlength="10" placeholder="····" onkeydown="if(event.key==='Enter')checkPassword()" autofocus />
+    <button class="lock-btn" onclick="checkPassword()">Unlock</button>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
+
 <div class="app">
   <div class="header">
     <div class="header-left">
@@ -169,17 +191,26 @@
   <div id="panel-projects" class="panel active">
     <div class="card">
       <div class="top-row">
-        <div class="section-title" style="margin-bottom:0">Home maintenance</div>
-        <select id="proj-filter" onchange="renderProjects()" style="font-size:12px;padding:4px 8px;width:auto">
-          <option value="all">All</option>
-          <option value="overdue">Overdue</option>
-          <option value="soon">Due soon</option>
-          <option value="ok">OK</option>
-          <option value="done">Done</option>
-        </select>
+        <div class="section-title" style="margin-bottom:0">Projects</div>
+        <div style="display:flex;gap:6px">
+          <select id="proj-filter-who" onchange="renderProjects()" style="font-size:12px;padding:4px 8px;width:auto">
+            <option value="all">Everyone</option>
+            <option value="isaac">Isaac</option>
+            <option value="hoopie">Hoopie</option>
+            <option value="auden">Auden</option>
+            <option value="zev">Zev</option>
+          </select>
+          <select id="proj-filter" onchange="renderProjects()" style="font-size:12px;padding:4px 8px;width:auto">
+            <option value="all">All</option>
+            <option value="overdue">Overdue</option>
+            <option value="soon">Due soon</option>
+            <option value="ok">OK</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
       </div>
       <div id="proj-list"></div>
-      <div class="add-grid-4">
+      <div style="display:grid;grid-template-columns:1fr 120px 90px 90px auto;gap:8px;margin-top:14px">
         <input type="text" id="new-proj-name" placeholder="Task name..." />
         <input type="date" id="new-proj-date" />
         <select id="new-proj-cat">
@@ -187,6 +218,13 @@
           <option value="⚡">Electric</option><option value="🏡">Exterior</option>
           <option value="🧹">Cleaning</option><option value="🔧">Repair</option>
           <option value="🌿">Yard</option><option value="📦">Other</option>
+        </select>
+        <select id="new-proj-who">
+          <option value="all">Everyone</option>
+          <option value="isaac">Isaac</option>
+          <option value="hoopie">Hoopie</option>
+          <option value="auden">Auden</option>
+          <option value="zev">Zev</option>
         </select>
         <button onclick="addProject()"><i class="ti ti-plus"></i> Add</button>
       </div>
@@ -199,8 +237,8 @@
       <div class="top-row">
         <div class="section-title" style="margin-bottom:0" id="cal-month-label"></div>
         <div style="display:flex;gap:4px">
-          <button class="action-btn" onclick="changeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
-          <button class="action-btn" onclick="changeMonth(1)"><i class="ti ti-chevron-right"></i></button>
+          <button class="action-btn" onclick="changeMonth(-1)" title="Previous week"><i class="ti ti-chevron-left"></i></button>
+          <button class="action-btn" onclick="changeMonth(1)" title="Next week"><i class="ti ti-chevron-right"></i></button>
         </div>
       </div>
       <div class="cal-grid" id="cal-headers"></div>
@@ -220,7 +258,7 @@
         <input type="datetime-local" id="new-ev-date" />
         <select id="new-ev-who">
           <option value="all">Everyone</option><option value="mom">Mom</option>
-          <option value="dad">Dad</option><option value="kid1">Kid 1</option><option value="kid2">Kid 2</option>
+          <option value="dad">Dad</option><option value="auden">Auden</option><option value="zev">Zev</option>
         </select>
         <button onclick="addEvent()"><i class="ti ti-plus"></i> Add</button>
       </div>
@@ -255,10 +293,13 @@
     <div class="store-filter">
       <select id="grocery-store" onchange="renderGrocery()" style="flex:1">
         <option value="all">All stores</option>
-        <option value="Grocery">Grocery store</option>
         <option value="Costco">Costco</option>
+        <option value="Wegmans">Wegmans</option>
+        <option value="Whole Foods">Whole Foods</option>
+        <option value="Harris Teeter">Harris Teeter</option>
         <option value="Target">Target</option>
-        <option value="Hardware">Hardware store</option>
+        <option value="Trader Joe's">Trader Joe's</option>
+        <option value="Hardware">Hardware</option>
         <option value="Other">Other</option>
       </select>
       <button onclick="clearChecked()" style="font-size:13px;padding:7px 12px;color:var(--text2)">Clear checked</button>
@@ -269,8 +310,13 @@
         <input type="text" id="new-groc-item" placeholder="Item..." />
         <input type="text" id="new-groc-qty" placeholder="Qty" />
         <select id="new-groc-store">
-          <option value="Grocery">Grocery</option><option value="Costco">Costco</option>
-          <option value="Target">Target</option><option value="Hardware">Hardware</option>
+                    <option value="Costco">Costco</option>
+          <option value="Wegmans">Wegmans</option>
+          <option value="Whole Foods">Whole Foods</option>
+          <option value="Harris Teeter">Harris Teeter</option>
+          <option value="Target">Target</option>
+          <option value="Trader Joe's">Trader Joe's</option>
+          <option value="Hardware">Hardware</option>
           <option value="Other">Other</option>
         </select>
         <button onclick="addGrocery()"><i class="ti ti-plus"></i> Add</button>
@@ -286,7 +332,8 @@ document.getElementById('today-date').textContent = today.toLocaleDateString('en
 const KEYS = { projects:'hhq-projects', events:'hhq-events', groceries:'hhq-groceries', gcalFeeds:'hhq-gcalfeeds' };
 
 let projects=[], events=[], groceries=[], gcalFeeds=[], gcalEvents=[];
-let calViewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+let calWeekStart = new Date(today);
+calWeekStart.setDate(today.getDate() - today.getDay());
 
 function save(key, data) {
   try { localStorage.setItem(key, JSON.stringify(data)); setSaveStatus('All changes saved'); } 
@@ -308,15 +355,15 @@ function defaultProjects(){return[
   {id:5,name:'Fix screen door',cat:'🔧',dueDate:'2026-07-01',done:false},
 ];}
 function defaultEvents(){return[
-  {id:1,title:'Doctor appointment',date:'2026-05-28T10:00',who:'kid1'},
+  {id:1,title:'Doctor appointment',date:'2026-05-28T10:00',who:'auden'},
   {id:2,title:'HVAC service visit',date:'2026-05-29T09:00',who:'dad'},
   {id:3,title:"Family dinner",date:'2026-06-01T18:00',who:'all'},
 ];}
 function defaultGroceries(){return[
-  {id:1,name:'Milk',qty:'1 gal',store:'Grocery',checked:false},
+  {id:1,name:'Milk',qty:'1 gal',store:'Wegmans',checked:false},
   {id:2,name:'Eggs',qty:'2 doz',store:'Costco',checked:false},
   {id:3,name:'Air filters 20x25x1',qty:'4',store:'Hardware',checked:false},
-  {id:4,name:'Bread',qty:'2 loaves',store:'Grocery',checked:false},
+  {id:4,name:'Bread',qty:'2 loaves',store:'Wegmans',checked:false},
   {id:5,name:'Laundry detergent',qty:'1',store:'Target',checked:false},
 ];}
 
@@ -345,16 +392,45 @@ function switchTab(t) {
 
 function renderAll(){renderProjects();renderCalendar();renderGrocery();}
 
+const CAT_OPTIONS=['🌡️','💧','⚡','🏡','🧹','🔧','🌿','📦'];
+const WHO_OPTIONS=['all','isaac','hoopie','auden','zev'];
+const WHO_LABELS={all:'Everyone',isaac:'Isaac',hoopie:'Hoopie',auden:'Auden',zev:'Zev'};
+const WHO_COLORS={all:'w-all',isaac:'w-dad',hoopie:'w-mom',auden:'w-kid',zev:'w-kid'};
+
 function renderProjects() {
   const filter=document.getElementById('proj-filter').value;
+  const whoFilter=document.getElementById('proj-filter-who').value;
   const list=document.getElementById('proj-list');
-  const filtered=projects.filter(p=>filter==='all'||getStatus(p)===filter);
+  const filtered=projects.filter(p=>{
+    const statusOk=filter==='all'||getStatus(p)===filter;
+    const whoOk=whoFilter==='all'||p.who===whoFilter||(!p.who&&whoFilter==='all');
+    return statusOk&&whoOk;
+  });
   if(!filtered.length){list.innerHTML='<div class="empty">No tasks here</div>';updateStats();return;}
   const bc={overdue:'b-overdue',soon:'b-soon',ok:'b-ok',done:'b-done'};
   const bt={overdue:'Overdue',soon:'Due soon',ok:'On track',done:'Done'};
   list.innerHTML=filtered.map(p=>{
     const s=getStatus(p);
     const ds=new Date(p.dueDate+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const whoKey=p.who||'all';
+    if(p._editing){
+      const catOpts=CAT_OPTIONS.map(c=>`<option value="${c}"${c===p.cat?' selected':''}>${c}</option>`).join('');
+      const whoOpts=WHO_OPTIONS.map(w=>`<option value="${w}"${w===whoKey?' selected':''}>${WHO_LABELS[w]}</option>`).join('');
+      return`<div class="proj-item">
+        <select onchange="editField(${p.id},'cat',this.value)" style="width:52px;padding:4px;font-size:16px">${catOpts}</select>
+        <div class="proj-meta" style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
+          <input type="text" value="${p.name.replace(/"/g,'&quot;')}" onchange="editField(${p.id},'name',this.value)" style="font-size:14px;font-weight:500" />
+          <div style="display:flex;gap:6px">
+            <input type="date" value="${p.dueDate}" onchange="editField(${p.id},'dueDate',this.value)" style="font-size:13px;width:140px" />
+            <select onchange="editField(${p.id},'who',this.value)" style="font-size:13px">${whoOpts}</select>
+          </div>
+        </div>
+        <div class="proj-actions">
+          <button class="action-btn" onclick="saveEdit(${p.id})" title="Save" style="color:var(--green-text)"><i class="ti ti-check"></i></button>
+          <button class="action-btn" onclick="cancelEdit(${p.id})" title="Cancel"><i class="ti ti-x"></i></button>
+        </div>
+      </div>`;
+    }
     return`<div class="proj-item">
       <div class="proj-icon">${p.cat}</div>
       <div class="proj-meta">
@@ -362,7 +438,9 @@ function renderProjects() {
         <div class="proj-sub">Due ${ds}</div>
       </div>
       <div class="proj-actions">
+        <span class="who-tag ${WHO_COLORS[whoKey]||'w-all'}" style="font-size:11px">${WHO_LABELS[whoKey]||whoKey}</span>
         <span class="badge ${bc[s]}">${bt[s]}</span>
+        <button class="action-btn" onclick="startEdit(${p.id})" title="Edit"><i class="ti ti-pencil"></i></button>
         <button class="action-btn" onclick="toggleProj(${p.id})" title="${p.done?'Mark incomplete':'Mark done'}"><i class="ti ${p.done?'ti-rotate-clockwise-2':'ti-check'}"></i></button>
         <button class="action-btn" onclick="deleteProj(${p.id})"><i class="ti ti-trash"></i></button>
       </div>
@@ -370,14 +448,19 @@ function renderProjects() {
   }).join('');
   updateStats();
 }
+function startEdit(id){const p=projects.find(x=>x.id===id);if(p){p._editing=true;p._orig={name:p.name,cat:p.cat,dueDate:p.dueDate,who:p.who};renderProjects();}}
+function editField(id,field,val){const p=projects.find(x=>x.id===id);if(p)p[field]=val;}
+function saveEdit(id){const p=projects.find(x=>x.id===id);if(p){delete p._editing;delete p._orig;save(KEYS.projects,projects);renderProjects();}}
+function cancelEdit(id){const p=projects.find(x=>x.id===id);if(p&&p._orig){Object.assign(p,p._orig);delete p._editing;delete p._orig;renderProjects();}}
 function toggleProj(id){const p=projects.find(x=>x.id===id);if(p){p.done=!p.done;save(KEYS.projects,projects);renderProjects();}}
-function deleteProj(id){projects=projects.filter(x=>x.id!==id);save(KEYS.projects,projects);renderProjects();}
+function deleteProj(id){if(!confirm('Delete this task?'))return;projects=projects.filter(x=>x.id!==id);save(KEYS.projects,projects);renderProjects();}
 function addProject(){
   const name=document.getElementById('new-proj-name').value.trim();
   const date=document.getElementById('new-proj-date').value;
   const cat=document.getElementById('new-proj-cat').value;
+  const who=document.getElementById('new-proj-who').value;
   if(!name||!date)return;
-  projects.push({id:Date.now(),name,cat,dueDate:date,done:false});
+  projects.push({id:Date.now(),name,cat,dueDate:date,who,done:false});
   document.getElementById('new-proj-name').value='';
   document.getElementById('new-proj-date').value='';
   save(KEYS.projects,projects);renderProjects();
@@ -389,7 +472,7 @@ function renderCalendar(){
   document.getElementById('cal-headers').innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-day-header">${d}</div>`).join('');
   const first=new Date(yr,mo,1).getDay(), dim=new Date(yr,mo+1,0).getDate(), prev=new Date(yr,mo,0).getDate();
   const allEvs=[...events,...gcalEvents];
-  const wc={all:'#639922',mom:'#D85A30',dad:'#378ADD',kid1:'#7F77DD',kid2:'#D85A30'};
+  const wc={all:'#639922',mom:'#D85A30',dad:'#378ADD',auden:'#7F77DD',zev:'#D85A30'};
   let cells='';
   for(let i=0;i<first;i++) cells+=`<div class="cal-day other-month"><div class="cal-num">${prev-first+1+i}</div></div>`;
   for(let d=1;d<=dim;d++){
@@ -406,10 +489,11 @@ function changeMonth(dir){calViewDate.setMonth(calViewDate.getMonth()+dir);rende
 
 function renderEvents(){
   const allEvs=[...events,...gcalEvents].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const upcoming=allEvs.filter(e=>new Date(e.date)>=today).slice(0,10);
-  const wl={all:'Everyone',mom:'Mom',dad:'Dad',kid1:'Kid 1',kid2:'Kid 2'};
-  const wc2={all:'w-all',mom:'w-mom',dad:'w-dad',kid1:'w-kid',kid2:'w-kid'};
-  const wcolor={all:'#639922',mom:'#D85A30',dad:'#378ADD',kid1:'#7F77DD',kid2:'#D85A30'};
+  const oneWeek=new Date(today.getTime()+7*86400000);
+  const upcoming=allEvs.filter(e=>{const d=new Date(e.date);return d>=today&&d<=oneWeek;});
+  const wl={all:'Everyone',mom:'Mom',dad:'Dad',auden:'Auden',zev:'Zev'};
+  const wc2={all:'w-all',mom:'w-mom',dad:'w-dad',auden:'w-kid',zev:'w-kid'};
+  const wcolor={all:'#639922',mom:'#D85A30',dad:'#378ADD',auden:'#7F77DD',zev:'#D85A30'};
   const el=document.getElementById('event-list');
   if(!upcoming.length){el.innerHTML='<div class="empty">No upcoming events</div>';return;}
   el.innerHTML=upcoming.map(e=>{
@@ -587,6 +671,32 @@ function parseICSDate(r){
 }
 
 init();
+
+(function(){
+  const PASS='REMOVED';
+  const SESSION_KEY='hhq-unlocked';
+  function checkPassword(){
+    const val=document.getElementById('lock-input').value;
+    if(val===PASS){
+      sessionStorage.setItem(SESSION_KEY,'1');
+      document.getElementById('lock-screen').style.display='none';
+    } else {
+      const err=document.getElementById('lock-error');
+      err.textContent='Wrong password, try again';
+      document.getElementById('lock-input').value='';
+      document.getElementById('lock-input').focus();
+      setTimeout(()=>err.textContent='',2500);
+    }
+  }
+  window.checkPassword=checkPassword;
+  if(sessionStorage.getItem(SESSION_KEY)==='1'){
+    document.addEventListener('DOMContentLoaded',()=>{
+      const ls=document.getElementById('lock-screen');
+      if(ls) ls.style.display='none';
+    });
+  }
+})();
+
 </script>
 </body>
 </html>
