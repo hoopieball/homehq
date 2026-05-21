@@ -1209,3 +1209,41 @@ function renderLeaderboard(){
     }).join('');
   }
 }
+
+
+// ── PASSWORD ──────────────────────────────────────────────────────
+async function checkPassword(){
+  const val=document.getElementById('lock-input').value;
+  const encoded=new TextEncoder().encode(val);
+  const hashBuf=await crypto.subtle.digest('SHA-256',encoded);
+  const hashHex=Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  try{
+    const rows=await sbFetch('app_config','GET',null,`?key=eq.password_hash&value=eq.${hashHex}&select=key`);
+    if(rows&&rows.length>0){
+      sessionStorage.setItem('hhq-unlocked','1');
+      document.getElementById('lock-screen').style.display='none';
+    }else{
+      showLockError();
+    }
+  }catch(e){
+    console.error('[Auth] Supabase check failed:',e.message);
+    showLockError();
+  }
+}
+function showLockError(){
+  const err=document.getElementById('lock-error');
+  err.textContent='Wrong password, try again';
+  document.getElementById('lock-input').value='';
+  document.getElementById('lock-input').focus();
+  setTimeout(()=>{err.textContent='';},2500);
+}
+
+// Check session on load
+if(sessionStorage.getItem('hhq-unlocked')==='1'){
+  document.getElementById('lock-screen').style.display='none';
+}
+
+init();
+</script>
+</body>
+</html>
