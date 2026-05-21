@@ -37,7 +37,7 @@
   --pink-bg:#4B1528;--pink-tx:#F4C0D1;
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;font-family:Arial,sans-serif;background:linear-gradient(135deg,#a8a8a8 0%,#b8b8b8 100%);color:var(--text)}
+html,body{height:100%;font-family:Arial,sans-serif;background:var(--bg3);color:var(--text)}
 
 /* LOCK */
 .lock-screen{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem}
@@ -544,16 +544,15 @@ async function fetchWeather(){
     const code=c.weather_code;
     console.log('[Weather] Code:',code,'Temp:',c.temperature_2m);
     
-    let bg='linear-gradient(135deg,#a8a8a8 0%,#b8b8b8 100%)',desc='Cloudy';
-    if(code===0||code===1){bg='linear-gradient(135deg,#667eea 0%,#764ba2 100%)';desc='Clear';}
-    else if(code===2){bg='linear-gradient(135deg,#a8edea 0%,#fed6e3 100%)';desc='Partly Cloudy';}
-    else if(code===3){bg='linear-gradient(135deg,#9ca6b8 0%,#c8c8c8 100%)';desc='Overcast';}
-    else if(code===45||code===48){bg='linear-gradient(135deg,#bbb 0%,#ddd 100%)';desc='Foggy';}
-    else if(code>=51&&code<=67){bg='linear-gradient(135deg,#667eea 0%,#89c4eb 100%)';desc='Rainy';}
-    else if(code>=71&&code<=77){bg='linear-gradient(135deg,#e0e7ff 0%,#f3f4f6 100%)';desc='Snow';}
-    else if(code===80||code===81||code===82){bg='linear-gradient(135deg,#2d5a7b 0%,#6fa3c1 100%)';desc='Showers';}
-    else if(code>=90){bg='linear-gradient(135deg,#1a202c 0%,#2d3748 100%)';desc='Thunderstorm';}
-    
+    let desc='Cloudy';
+    if(code===0||code===1) desc='Clear';
+    else if(code===2) desc='Partly Cloudy';
+    else if(code===3) desc='Overcast';
+    else if(code===45||code===48) desc='Foggy';
+    else if(code>=51&&code<=67) desc='Rainy';
+    else if(code>=71&&code<=77) desc='Snow';
+    else if(code===80||code===81||code===82) desc='Showers';
+    else if(code>=90) desc='Thunderstorm';
     
     const widget=document.getElementById('weather-widget');
     if(widget){
@@ -563,9 +562,7 @@ async function fetchWeather(){
       widget.style.display='flex';
       console.log('[Weather] Widget updated');
     }
-  }catch(e){
-    console.error('[Weather] Error:',e.message);
-  }
+  }catch(e){console.error('[Weather] Error:',e.message);}
 }
 
 async function init(){
