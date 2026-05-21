@@ -474,12 +474,12 @@ body{position:relative;background-size:cover;background-position:center;backgrou
   <!-- ── LEADERBOARD ──────────────────────────── -->
   <div id="panel-leaderboard" class="panel">
     <div class="card" id="lb-podium-card">
-      <div class="section-title">All-time completions</div>
-      <div id="lb-podium"></div>
+      <div class="section-title" id="lb-week-title">This week</div>
+      <div id="lb-week"></div>
     </div>
     <div class="card">
-      <div class="section-title">This month</div>
-      <div id="lb-month"></div>
+      <div class="section-title">All-time</div>
+      <div id="lb-alltime"></div>
     </div>
     <div class="card">
       <div class="section-title">Recent completions</div>
@@ -1137,59 +1137,63 @@ const LB_NAMES={all:'Everyone',hoopie:'Hoopie',isaac:'Isaac',auden:'Auden',zev:'
 const MEMBERS=['isaac','hoopie','auden','zev'];
 
 function renderLeaderboard(){
-  // Count all-time per person (from completions log + already-done projects)
+  const now=new Date();
+  // Week start = Sunday of current week
+  const ws=new Date(now); ws.setDate(now.getDate()-now.getDay()); ws.setHours(0,0,0,0);
+  const we=new Date(ws); we.setDate(ws.getDate()+6); we.setHours(23,59,59);
+
+  // Count this week
+  const weekCounts={};
+  MEMBERS.forEach(m=>weekCounts[m]=0);
+  completions.filter(c=>{const d=new Date(c.at);return d>=ws&&d<=we;})
+    .forEach(c=>{if(weekCounts[c.who]!==undefined)weekCounts[c.who]++;});
+
+  // Count all-time
   const allTimeCounts={};
   MEMBERS.forEach(m=>allTimeCounts[m]=0);
   completions.forEach(c=>{if(allTimeCounts[c.who]!==undefined)allTimeCounts[c.who]++;});
 
-  // Count this month
-  const now=new Date();
-  const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
-  const monthCounts={};
-  MEMBERS.forEach(m=>monthCounts[m]=0);
-  completions.filter(c=>new Date(c.at)>=monthStart).forEach(c=>{if(monthCounts[c.who]!==undefined)monthCounts[c.who]++;});
+  // Week title with date range
+  const fmtD=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('lb-week-title').textContent='This week · '+fmtD(ws)+' – '+fmtD(we);
 
-  // Sort for podium
-  const sorted=MEMBERS.map(m=>({who:m,count:allTimeCounts[m]})).sort((a,b)=>b.count-a.count);
-  const maxCount=Math.max(1,...sorted.map(x=>x.count));
-
-  // Podium (top 3)
+  // ── THIS WEEK PODIUM ──────────────────────────────
+  const weekSorted=MEMBERS.map(m=>({who:m,count:weekCounts[m]})).sort((a,b)=>b.count-a.count);
   const medals=['🥇','🥈','🥉'];
   const podiumClasses=['p1','p2','p3'];
-  const podiumEl=document.getElementById('lb-podium');
-  if(sorted.every(x=>x.count===0)){
-    podiumEl.innerHTML='<div class="empty">No tasks completed yet — get going!</div>';
+  const weekEl=document.getElementById('lb-week');
+  if(weekSorted.every(x=>x.count===0)){
+    weekEl.innerHTML='<div class="empty">No completions this week yet — get going!</div>';
   } else {
-    podiumEl.innerHTML=`<div class="podium">${sorted.slice(0,4).map((x,i)=>`
+    weekEl.innerHTML=`<div class="podium">${weekSorted.slice(0,4).map((x,i)=>`
       <div class="podium-slot ${podiumClasses[i]||''}">
         <div class="podium-rank">${medals[i]||'🏅'}</div>
         <div class="lb-avatar" style="background:${LB_COLORS[x.who]}22;color:${LB_COLORS[x.who]};margin:0 auto 6px">${LB_INITIALS[x.who]}</div>
         <div class="podium-name">${LB_NAMES[x.who]}</div>
         <div class="podium-count" style="color:${LB_COLORS[x.who]}">${x.count}</div>
-        <div class="podium-label">tasks done</div>
+        <div class="podium-label">this week</div>
       </div>`).join('')}
     </div>`;
   }
 
-  // Month list with bars
-  const monthSorted=MEMBERS.map(m=>({who:m,count:monthCounts[m]})).sort((a,b)=>b.count-a.count);
-  const maxMonth=Math.max(1,...monthSorted.map(x=>x.count));
-  const monthEl=document.getElementById('lb-month');
-  const monthName=now.toLocaleDateString('en-US',{month:'long'});
-  if(monthSorted.every(x=>x.count===0)){
-    monthEl.innerHTML=`<div class="empty">No completions in ${monthName} yet</div>`;
+  // ── ALL-TIME WITH BARS ────────────────────────────
+  const allSorted=MEMBERS.map(m=>({who:m,count:allTimeCounts[m]})).sort((a,b)=>b.count-a.count);
+  const maxAll=Math.max(1,...allSorted.map(x=>x.count));
+  const allEl=document.getElementById('lb-alltime');
+  if(allSorted.every(x=>x.count===0)){
+    allEl.innerHTML='<div class="empty">No completions yet</div>';
   } else {
-    monthEl.innerHTML=monthSorted.map((x,i)=>`
+    allEl.innerHTML=allSorted.map((x,i)=>`
       <div class="lb-row">
         <div class="lb-rank">${i+1}</div>
         <div class="lb-avatar" style="background:${LB_COLORS[x.who]}22;color:${LB_COLORS[x.who]}">${LB_INITIALS[x.who]}</div>
         <div class="lb-name">${LB_NAMES[x.who]}</div>
-        <div class="lb-bar-wrap"><div class="lb-bar" style="width:${Math.round((x.count/maxMonth)*100)}%;background:${LB_COLORS[x.who]}"></div></div>
+        <div class="lb-bar-wrap"><div class="lb-bar" style="width:${Math.round((x.count/maxAll)*100)}%;background:${LB_COLORS[x.who]}"></div></div>
         <div class="lb-count">${x.count}</div>
       </div>`).join('');
   }
 
-  // Recent completions
+  // ── RECENT COMPLETIONS ────────────────────────────
   const recentEl=document.getElementById('lb-recent');
   if(!completions.length){
     recentEl.innerHTML='<div class="empty">Completed tasks will appear here</div>';
@@ -1205,39 +1209,3 @@ function renderLeaderboard(){
     }).join('');
   }
 }
-
-// ── PASSWORD ──────────────────────────────────────────────────────
-async function checkPassword(){
-  const val=document.getElementById('lock-input').value;
-  const encoded=new TextEncoder().encode(val);
-  const hashBuf=await crypto.subtle.digest('SHA-256',encoded);
-  const hashHex=Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-  try{
-    const rows=await sbFetch('app_config','GET',null,`?key=eq.password_hash&value=eq.${hashHex}&select=key`);
-    if(rows&&rows.length>0){
-      sessionStorage.setItem('hhq-unlocked','1');
-      document.getElementById('lock-screen').style.display='none';
-    }else{
-      showLockError();
-    }
-  }catch(e){
-    console.error('[Auth] Supabase check failed:',e.message);
-    showLockError();
-  }
-}
-function showLockError(){
-  const err=document.getElementById('lock-error');
-  err.textContent='Wrong password, try again';
-  document.getElementById('lock-input').value='';
-  document.getElementById('lock-input').focus();
-  setTimeout(()=>{err.textContent='';},2500);
-}
-// Check session on load
-if(sessionStorage.getItem('hhq-unlocked')==='1'){
-  document.getElementById('lock-screen').style.display='none';
-}
-
-init();
-</script>
-</body>
-</html>
