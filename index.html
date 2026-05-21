@@ -327,8 +327,7 @@ body{position:relative;background-size:cover;background-position:center;backgrou
           </select>
         </div>
       </div>
-      <div id="proj-list"></div>
-      <div class="add-form">
+      <div class="add-form" style="margin-top:0;margin-bottom:12px">
         <input type="text" id="new-proj-name" placeholder="Task name..." style="flex:2;min-width:140px"/>
         <input type="date" id="new-proj-date" style="min-width:130px"/>
         <select id="new-proj-cat" style="min-width:100px">
@@ -339,15 +338,15 @@ body{position:relative;background-size:cover;background-position:center;backgrou
           <option value="🎉">🎉 For fun</option>
           <option value="📦">📦 Other</option>
         </select>
-        <select id="new-proj-who" style="min-width:100px">
-          <option value="all">Everyone</option>
-          <option value="isaac">Isaac</option>
-          <option value="hoopie">Hoopie</option>
-          <option value="auden">Auden</option>
-          <option value="zev">Zev</option>
-        </select>
+        <div id="new-proj-who" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <label style="font-size:13px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" value="isaac" class="proj-who-cb" style="width:16px;height:16px"> Isaac</label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" value="hoopie" class="proj-who-cb" style="width:16px;height:16px"> Hoopie</label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" value="auden" class="proj-who-cb" style="width:16px;height:16px"> Auden</label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" value="zev" class="proj-who-cb" style="width:16px;height:16px"> Zev</label>
+        </div>
         <button onclick="addProject()"><i class="ti ti-plus"></i> Add</button>
       </div>
+      <div id="proj-list"></div>
     </div>
   </div>
 
@@ -628,12 +627,13 @@ function renderProjects(){
   const filtered=projects.filter(p=>{
     const s=getStatus(p);
     const sOk=filter==='all'||(filter==='active'?s!=='done':s===filter);
-    const wOk=whoF==='all'||(p.who||'all')===whoF;
+    const pWho=(p.who||'all').split(',').map(w=>w.trim());
+    const wOk=whoF==='all'||pWho.includes(whoF)||pWho.includes('all');
     return sOk&&wOk;
   }).sort((a,b)=>{
     const aDone=a.done?1:0, bDone=b.done?1:0;
     if(aDone!==bDone) return aDone-bDone;
-    return 0;
+    return new Date(a.dueDate||a.due_date||'9999')-new Date(b.dueDate||b.due_date||'9999');
   });
   if(!filtered.length){list.innerHTML='<div class="empty">No tasks match</div>';updateStats();return;}
   const bc={overdue:'b-overdue',soon:'b-soon',ok:'b-ok',done:'b-done'};
@@ -644,14 +644,16 @@ function renderProjects(){
     const wk=p.who||'all';
     if(p._editing){
       const catOpts=CAT_OPTIONS.map(c=>`<option value="${c}"${c===p.cat?' selected':''}>${c}</option>`).join('');
-      const whoOpts=WHO_OPTIONS.map(w=>`<option value="${w}"${w===wk?' selected':''}>${WHO_LABELS[w]}</option>`).join('');
+      // who checkboxes rendered inline
       return`<div class="proj-item" style="flex-wrap:wrap;gap:8px">
         <select onchange="editField(${p.id},'cat',this.value)" style="width:54px;padding:5px;font-size:16px">${catOpts}</select>
         <div style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:6px">
           <input type="text" value="${p.name.replace(/"/g,'&quot;')}" onchange="editField(${p.id},'name',this.value)" style="font-size:14px;font-weight:500;width:100%"/>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <input type="date" value="${p.dueDate}" onchange="editField(${p.id},'dueDate',this.value)" style="font-size:13px;flex:1;min-width:120px"/>
-            <select onchange="editField(${p.id},'who',this.value)" style="font-size:13px;flex:1">${whoOpts}</select>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;align-items:center">
+              ${['isaac','hoopie','auden','zev'].map(w=>'<label style="font-size:12px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" value="'+w+'" '+(wk.split(",").map(x=>x.trim()).includes(w)?'checked':'')+' onchange="editWho('+p.id+')" class="edit-who-'+p.id+'" style="width:15px;height:15px"> '+WHO_LABELS[w]+'</label>').join('')}
+            </div>
           </div>
         </div>
         <div class="proj-actions">
@@ -667,8 +669,8 @@ function renderProjects(){
         <div class="proj-sub">Due ${ds}</div>
       </div>
       <div class="proj-actions">
-        <span class="who-tag ${WHO_COLORS[wk]}">${WHO_LABELS[wk]}</span>
-        <span class="badge ${bc[s]}">${bt[s]}</span>
+        ${(wk||'all').split(',').map(w=>`<span class="who-tag ${WHO_COLORS[w.trim()]||'w-all'}">${WHO_LABELS[w.trim()]||w}</span>`).join('')}
+        ${s==='ok'?'':`<span class="badge ${bc[s]}">${bt[s]}</span>`}
         <button class="action-btn" onclick="startEdit(${p.id})"><i class="ti ti-pencil"></i></button>
         <button class="action-btn" onclick="toggleProj(${p.id})"><i class="ti ${p.done?'ti-rotate-clockwise-2':'ti-check'}"></i></button>
         <button class="action-btn" onclick="deleteProj(${p.id})"><i class="ti ti-trash"></i></button>
@@ -679,6 +681,11 @@ function renderProjects(){
 }
 function startEdit(id){const p=projects.find(x=>x.id===id);if(p){p._editing=true;p._orig={name:p.name,cat:p.cat,dueDate:p.dueDate,who:p.who};renderProjects();}}
 function editField(id,f,v){const p=projects.find(x=>x.id===id);if(p)p[f]=v;}
+function editWho(id){
+  const cbs=[...document.querySelectorAll('.edit-who-'+id+':checked')].map(c=>c.value);
+  const p=projects.find(x=>x.id===id);
+  if(p) p.who=cbs.length?cbs.join(','):'all';
+}
 async function saveEdit(id){
   const p=projects.find(x=>x.id===id);if(!p)return;
   delete p._editing;delete p._orig;
@@ -713,12 +720,14 @@ async function addProject(){
   const name=document.getElementById('new-proj-name').value.trim();
   const date=document.getElementById('new-proj-date').value;
   const cat=document.getElementById('new-proj-cat').value;
-  const who=document.getElementById('new-proj-who').value;
+  const whoCbs=[...document.querySelectorAll('.proj-who-cb:checked')].map(c=>c.value);
+  const who=whoCbs.length?whoCbs.join(','):'all';
   if(!name||!date)return;
   const newP={id:Date.now(),name,cat,due_date:date,dueDate:date,who,done:false};
   projects.push(newP);
   document.getElementById('new-proj-name').value='';
   document.getElementById('new-proj-date').value='';
+  document.querySelectorAll('.proj-who-cb').forEach(c=>c.checked=false);
   renderProjects();
   try{await sbFetch('projects','POST',{id:newP.id,name,cat,due_date:date,who,done:false});setSaveStatus('All changes saved');}
   catch(e){lsSave('hhq-projects',projects);setSaveStatus('Saved locally');}
