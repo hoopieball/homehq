@@ -350,6 +350,15 @@ body{position:relative;background-size:cover;background-position:center;backgrou
           <label class="who-check" style="color:#D4537E"><input type="checkbox" value="auden" class="proj-who-cb"><span class="wc-box"></span> Auden</label>
           <label class="who-check" style="color:#378ADD"><input type="checkbox" value="zev" class="proj-who-cb"><span class="wc-box"></span> Zev</label>
         </div>
+        <select id="new-proj-recur" style="min-width:110px">
+          <option value="none">One-time</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Every 3 months</option>
+          <option value="yearly">Yearly</option>
+        </select>
         <button onclick="addProject()"><i class="ti ti-plus"></i> Add</button>
       </div>
       <div id="proj-list"></div>
@@ -657,6 +666,15 @@ function renderProjects(){
           <input type="text" value="${p.name.replace(/"/g,'&quot;')}" onchange="editField(${p.id},'name',this.value)" style="font-size:14px;font-weight:500;width:100%"/>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <input type="date" value="${p.dueDate}" onchange="editField(${p.id},'dueDate',this.value)" style="font-size:13px;flex:1;min-width:120px"/>
+            <select onchange="editField(${p.id},'recur',this.value||null)" style="font-size:12px;flex:1">
+              <option value=""${!p.recur?' selected':''}>One-time</option>
+              <option value="daily"${p.recur==='daily'?' selected':''}>Daily</option>
+              <option value="weekly"${p.recur==='weekly'?' selected':''}>Weekly</option>
+              <option value="biweekly"${p.recur==='biweekly'?' selected':''}>Every 2 wks</option>
+              <option value="monthly"${p.recur==='monthly'?' selected':''}>Monthly</option>
+              <option value="quarterly"${p.recur==='quarterly'?' selected':''}>Quarterly</option>
+              <option value="yearly"${p.recur==='yearly'?' selected':''}>Yearly</option>
+            </select>
             <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;align-items:center">
               ${['isaac','hoopie','auden','zev'].map(w=>'<label style="font-size:12px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" value="'+w+'" '+(wk.split(",").map(x=>x.trim()).includes(w)?'checked':'')+' onchange="editWho('+p.id+')" class="edit-who-'+p.id+'" style="width:15px;height:15px"> '+WHO_LABELS[w]+'</label>').join('')}
             </div>
@@ -672,7 +690,7 @@ function renderProjects(){
       <div class="proj-icon">${p.cat}</div>
       <div class="proj-meta">
         <div class="proj-name ${p.done?'done-strike':''}">${p.name}</div>
-        <div class="proj-sub">Due ${ds}</div>
+        <div class="proj-sub">Due ${ds}${p.recur?` <span style="color:var(--text3)">· 🔁 ${({daily:'Daily',weekly:'Weekly',biweekly:'Every 2 wks',monthly:'Monthly',quarterly:'Quarterly',yearly:'Yearly'})[p.recur]||''}</span>`:''}</div>
       </div>
       <div class="proj-actions">
         ${(wk||'all').split(',').map(w=>`<span class="who-tag ${WHO_COLORS[w.trim()]||'w-all'}">${WHO_LABELS[w.trim()]||w}</span>`).join('')}
@@ -695,7 +713,7 @@ function editWho(id){
 async function saveEdit(id){
   const p=projects.find(x=>x.id===id);if(!p)return;
   delete p._editing;delete p._orig;
-  try{await sbFetch('projects','PATCH',{name:p.name,cat:p.cat,due_date:p.dueDate,who:p.who,done:p.done},`?id=eq.${p.id}`);setSaveStatus('All changes saved');}
+  try{await sbFetch('projects','PATCH',{name:p.name,cat:p.cat,due_date:p.dueDate,who:p.who,done:p.done,recur:p.recur||null},`?id=eq.${p.id}`);setSaveStatus('All changes saved');}
   catch(e){lsSave('hhq-projects',projects);setSaveStatus('Saved locally');}
   renderProjects();
 }
@@ -710,10 +728,31 @@ async function toggleProj(id){
       completions.unshift(entry);
       if(completions.length>200)completions=completions.slice(0,200);
       await sbFetch('completions','POST',{task:p.name,who:p.who||'all'});
+      // Auto-create next occurrence for recurring tasks
+      if(p.recur){
+        const nextDate=getNextRecurDate(p.dueDate||p.due_date,p.recur);
+        const next={id:Date.now(),name:p.name,cat:p.cat,due_date:nextDate,dueDate:nextDate,who:p.who,done:false,recur:p.recur};
+        projects.push(next);
+        try{await sbFetch('projects','POST',{id:next.id,name:next.name,cat:next.cat,due_date:nextDate,who:next.who,done:false,recur:next.recur});}catch(e){}
+      }
     }
     setSaveStatus('All changes saved');
   }catch(e){lsSave('hhq-projects',projects);setSaveStatus('Saved locally');}
   renderProjects();
+}
+
+function getNextRecurDate(dateStr,recur){
+  const d=new Date(dateStr+'T00:00:00');
+  switch(recur){
+    case 'daily': d.setDate(d.getDate()+1); break;
+    case 'weekly': d.setDate(d.getDate()+7); break;
+    case 'biweekly': d.setDate(d.getDate()+14); break;
+    case 'monthly': d.setMonth(d.getMonth()+1); break;
+    case 'quarterly': d.setMonth(d.getMonth()+3); break;
+    case 'yearly': d.setFullYear(d.getFullYear()+1); break;
+  }
+  const pad=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 }
 async function deleteProj(id){
   if(!confirm('Delete this task?'))return;
@@ -726,16 +765,17 @@ async function addProject(){
   const name=document.getElementById('new-proj-name').value.trim();
   const date=document.getElementById('new-proj-date').value;
   const cat=document.getElementById('new-proj-cat').value;
+  const recur=document.getElementById('new-proj-recur').value;
   const whoCbs=[...document.querySelectorAll('.proj-who-cb:checked')].map(c=>c.value);
   const who=whoCbs.length?whoCbs.join(','):'all';
   if(!name||!date)return;
-  const newP={id:Date.now(),name,cat,due_date:date,dueDate:date,who,done:false};
+  const newP={id:Date.now(),name,cat,due_date:date,dueDate:date,who,done:false,recur:recur==='none'?null:recur};
   projects.push(newP);
   document.getElementById('new-proj-name').value='';
   document.getElementById('new-proj-date').value='';
   document.querySelectorAll('.proj-who-cb').forEach(c=>c.checked=false);
   renderProjects();
-  try{await sbFetch('projects','POST',{id:newP.id,name,cat,due_date:date,who,done:false});setSaveStatus('All changes saved');}
+  try{await sbFetch('projects','POST',{id:newP.id,name,cat,due_date:date,who,done:false,recur:newP.recur});setSaveStatus('All changes saved');}
   catch(e){lsSave('hhq-projects',projects);setSaveStatus('Saved locally');}
 }
 
@@ -753,7 +793,11 @@ function getCalWhoFilter(){
 function filterEvsByWho(evs){
   const who=getCalWhoFilter();
   if(who==='all') return evs;
-  return evs.filter(e=>(e.who||'all')===who);
+  return evs.filter(e=>{
+    const w=(e.who||'all');
+    if(w.includes(',')) return w.split(',').map(x=>x.trim()).includes(who);
+    return w===who;
+  });
 }
 
 function renderCalendar(){
@@ -762,7 +806,15 @@ function renderCalendar(){
   const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   document.getElementById('cal-week-label').textContent=fmt(ws)+' – '+fmt(we);
 
-  const allEvs=filterEvsByWho([...events,...gcalEvents]);
+  // Merge events + tasks (non-done projects) into calendar
+  const taskEvs=projects.filter(p=>!p.done).map(p=>({
+    id:p.id,
+    title:p.cat+' '+p.name,
+    date:(p.dueDate||p.due_date)+'T00:00',
+    who:p.who||'all',
+    isTask:true
+  }));
+  const allEvs=filterEvsByWho([...events,...gcalEvents,...taskEvs]);
   const todayStr=toDateStr(today);
   let cols='';
 
@@ -779,23 +831,34 @@ function renderCalendar(){
     } else {
       dayEvs.forEach(e=>{
         const d=new Date(e.date);
-        const ts=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
         const color=e.gcalColor||WHO_COLOR[e.who]||'#888';
-        const tag=e.gcalFeedName
-          ?`<span class="who-tag w-gcal">${e.gcalFeedName}</span>`
-          :`<span class="who-tag ${WHO_CLASS_CAL[e.who]||'w-all'}">${WHO_LABELS_CAL[e.who]||e.who}</span>`;
-        const src=e.gcalFeedName?`<span class="ev-source">G</span>`:'';
-        const del=e.gcalFeedName?'':`<button class="action-btn" onclick="deleteEvent(${e.id})"><i class="ti ti-trash" style="font-size:13px"></i></button>`;
-        evHtml+=`<div class="agenda-ev">
-          <div style="display:flex;gap:5px;align-items:flex-start">
-            <div class="agenda-ev-dot" style="background:${color}"></div>
-            <div style="flex:1;min-width:0">
-              <div class="agenda-ev-title">${e.title}${src}</div>
-              <div class="agenda-ev-time">${ts}</div>
+        if(e.isTask){
+          evHtml+=`<div class="agenda-ev" style="border-left:2px solid ${color};opacity:0.85">
+            <div style="display:flex;gap:5px;align-items:flex-start">
+              <div style="flex:1;min-width:0">
+                <div class="agenda-ev-title" style="font-size:11px">${e.title}</div>
+                <div class="agenda-ev-time">Task due</div>
+              </div>
             </div>
-          </div>
-          <div class="agenda-ev-tags">${tag}${del}</div>
-        </div>`;
+          </div>`;
+        } else {
+          const ts=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+          const tag=e.gcalFeedName
+            ?`<span class="who-tag w-gcal">${e.gcalFeedName}</span>`
+            :`<span class="who-tag ${WHO_CLASS_CAL[e.who]||'w-all'}">${WHO_LABELS_CAL[e.who]||e.who}</span>`;
+          const src=e.gcalFeedName?`<span class="ev-source">G</span>`:'';
+          const del=e.gcalFeedName?'':`<button class="action-btn" onclick="deleteEvent(${e.id})"><i class="ti ti-trash" style="font-size:13px"></i></button>`;
+          evHtml+=`<div class="agenda-ev">
+            <div style="display:flex;gap:5px;align-items:flex-start">
+              <div class="agenda-ev-dot" style="background:${color}"></div>
+              <div style="flex:1;min-width:0">
+                <div class="agenda-ev-title">${e.title}${src}</div>
+                <div class="agenda-ev-time">${ts}</div>
+              </div>
+            </div>
+            <div class="agenda-ev-tags">${tag}${del}</div>
+          </div>`;
+        }
       });
     }
 
