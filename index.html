@@ -162,6 +162,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .info-box{background:var(--bg2);border-radius:var(--r);padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:10px}
 .info-box strong{color:var(--text)}
 .empty{font-size:13px;color:var(--text3);text-align:center;padding:1.5rem 0}
+.who-check{display:flex;align-items:center;gap:5px;cursor:pointer;padding:5px 10px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg);font-size:13px;font-weight:500;transition:all .15s;user-select:none}
+.who-check:has(input:checked){border-color:currentColor;background:var(--bg2)}
+.who-check input{display:none}
+.who-check .wc-box{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.who-check input:checked~.wc-box{background:currentColor;border-color:currentColor}
+.who-check input:checked~.wc-box::after{content:'✓';color:white;font-size:13px;font-weight:700}
 .week-cols{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;overflow-x:auto}
 .agenda-day{min-width:0;border-right:0.5px solid var(--border);padding-right:6px}
 .agenda-day:last-child{border-right:none;padding-right:0}
@@ -339,10 +345,10 @@ body{position:relative;background-size:cover;background-position:center;backgrou
           <option value="📦">📦 Other</option>
         </select>
         <div id="new-proj-who" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <label style="font-size:13px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" value="isaac" class="proj-who-cb" style="width:16px;height:16px"> Isaac</label>
-          <label style="font-size:13px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" value="hoopie" class="proj-who-cb" style="width:16px;height:16px"> Hoopie</label>
-          <label style="font-size:13px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" value="auden" class="proj-who-cb" style="width:16px;height:16px"> Auden</label>
-          <label style="font-size:13px;display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" value="zev" class="proj-who-cb" style="width:16px;height:16px"> Zev</label>
+          <label class="who-check" style="color:#7F77DD"><input type="checkbox" value="isaac" class="proj-who-cb"><span class="wc-box"></span> Isaac</label>
+          <label class="who-check" style="color:#1D9E75"><input type="checkbox" value="hoopie" class="proj-who-cb"><span class="wc-box"></span> Hoopie</label>
+          <label class="who-check" style="color:#D4537E"><input type="checkbox" value="auden" class="proj-who-cb"><span class="wc-box"></span> Auden</label>
+          <label class="who-check" style="color:#378ADD"><input type="checkbox" value="zev" class="proj-who-cb"><span class="wc-box"></span> Zev</label>
         </div>
         <button onclick="addProject()"><i class="ti ti-plus"></i> Add</button>
       </div>
