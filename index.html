@@ -936,28 +936,19 @@ async function removeGCal(i){
   renderGCalList();renderCalendar();
 }
 async function fetchICS(rawUrl){
-  // Limit to 5 weeks either side to keep response small
-  const now=new Date();
-  const past=new Date(now); past.setDate(past.getDate()-7);
-  const future=new Date(now); future.setDate(future.getDate()+28);
-  const fmt=d=>d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
   const base=rawUrl.trim().replace('webcal://','https://');
-  // Append date range params — Google Calendar supports timeMin/timeMax on ical feeds
-  const sep=base.includes('?')?'&':'?';
-  const url=base+sep+'start='+fmt(past)+'&end='+fmt(future);
+  const url=base;
   console.log('[GCal] Fetching:', url);
   const proxies=[
-    {name:'corsproxy.io', fn:u=>`https://corsproxy.io/?${encodeURIComponent(u)}`},
-    {name:'allorigins',   fn:u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`},
-    {name:'corsproxy-alt',fn:u=>`https://proxy.cors.sh/${u}`},
+    {name:'corsproxy.io', timeout:15000, fn:u=>`https://corsproxy.io/?${encodeURIComponent(u)}`},
+    {name:'allorigins-json', timeout:60000, fn:u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`},
+    {name:'allorigins-raw', timeout:60000, fn:u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`},
   ];
   const errors=[];
   for(const proxy of proxies){
     try{
       console.log('[GCal] Trying proxy:', proxy.name);
-      const headers={};
-      if(proxy.name==='corsproxy-alt') headers['x-cors-api-key']='temp_public_key';
-      const res=await fetch(proxy.fn(url),{signal:AbortSignal.timeout(20000),headers});
+      const res=await fetch(proxy.fn(url),{signal:AbortSignal.timeout(proxy.timeout)});
       console.log('[GCal]', proxy.name, 'status:', res.status);
       if(!res.ok){errors.push(`${proxy.name}: HTTP ${res.status}`);continue;}
       const text=await res.text();
@@ -973,12 +964,6 @@ async function fetchICS(rawUrl){
       errors.push(`${proxy.name}: ${e.message}`);
     }
   }
-  // Last resort: try fetching directly (works if no CORS issue, e.g. some calendars)
-  try{
-    console.log('[GCal] Trying direct fetch');
-    const res=await fetch(url,{signal:AbortSignal.timeout(20000)});
-    if(res.ok){const text=await res.text();if(text.includes('BEGIN:VCALENDAR'))return text;}
-  }catch(e){errors.push('direct: '+e.message);}
   const msg='All proxies failed: '+errors.join(' | ');
   console.error('[GCal]', msg);
   throw new Error(msg);
