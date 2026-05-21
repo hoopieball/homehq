@@ -936,7 +936,15 @@ async function removeGCal(i){
   renderGCalList();renderCalendar();
 }
 async function fetchICS(rawUrl){
-  const url=rawUrl.trim().replace('webcal://','https://');
+  // Limit to 5 weeks either side to keep response small
+  const now=new Date();
+  const past=new Date(now); past.setDate(past.getDate()-7);
+  const future=new Date(now); future.setDate(future.getDate()+28);
+  const fmt=d=>d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const base=rawUrl.trim().replace('webcal://','https://');
+  // Append date range params — Google Calendar supports timeMin/timeMax on ical feeds
+  const sep=base.includes('?')?'&':'?';
+  const url=base+sep+'start='+fmt(past)+'&end='+fmt(future);
   console.log('[GCal] Fetching:', url);
   const proxies=[
     {name:'corsproxy.io', fn:u=>`https://corsproxy.io/?${encodeURIComponent(u)}`},
